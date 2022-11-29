@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"path/filepath"
 	"strings"
 
@@ -9,7 +10,7 @@ import (
 )
 
 func MatchPackageName(pattern string) PackageManifestFilter {
-	pattern = strings.ToLower(pattern)
+	pattern = fmt.Sprintf("*%s*", strings.ToLower(pattern))
 	return func(pkg *operators.PackageManifest) bool {
 		matches, err := filepath.Match(pattern, strings.ToLower(pkg.Name))
 		if err != nil {
