@@ -4,94 +4,76 @@ package main
 // https://pkg.go.dev/github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators#PackageManifestList
 
 import (
-	"flag"
 	"fmt"
+	"os"
+	"reflect"
+	"strings"
 
-	"k8s.io/client-go/kubernetes"
-	restclient "k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
-	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
+	flag "github.com/spf13/pflag"
 )
 
-func BuildConfigFromFlags(masterUrl, kubeconfigPath string) (*restclient.Config, error) {
-	if kubeconfigPath == "" && masterUrl == "" {
-		if kubeconfig, err := restclient.InClusterConfig(); err == nil {
-			return kubeconfig, nil
+type (
+	Options struct {
+		Kubeconfig    string `short:"k" help:"Path to kubernetes client configuration"`
+		CatalogSource string `short:"c" help:"Match string in package catalog source"`
+		Description   string `short:"d" help:"Match string in package description"`
+		InstallMode   string `short:"m" help:"Match package supported install mode"`
+		Keyword       string `short:"w" help:"Match package keyword"`
+		Name          string `short:"n" help:"Match package name"`
+		Certified     bool   `short:"C" help:"Match only certified packages"`
+	}
+)
+
+func (options *Options) ValidateInstallMode() error {
+	fmt.Printf("validateInstallMode\n")
+	return nil
+}
+
+func buildFlagsFromStruct(name string, options interface{}) *flag.FlagSet {
+	flagset := flag.NewFlagSet(name, flag.ExitOnError)
+
+	t := reflect.TypeOf(options)
+	e := t.Elem()
+	v := reflect.ValueOf(options)
+
+	for i := 0; i < e.NumField(); i++ {
+		field := e.Field(i)
+		fmt.Printf("field %d: %s\n", i, field.Name)
+
+		longOpt := field.Tag.Get("long")
+		if longOpt == "" {
+			longOpt = strings.ToLower(string(field.Name[0])) + string(field.Name[1:])
 		}
 
-		return clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
-			clientcmd.NewDefaultClientConfigLoadingRules(),
-			nil,
-		).ClientConfig()
+		shortOpt := field.Tag.Get("short")
+		helpText := field.Tag.Get("short")
+		validator := v.MethodByName(fmt.Sprintf("Validate%s", field.Name))
+		if validator.IsValid() {
+			println("found validator")
+		}
+
+		fmt.Printf("%s long --%s short -%s help %s\n", field.Name, longOpt, shortOpt, helpText)
+		switch p := v.Elem().Field(i).Interface().(type) {
+		case string:
+			ptr := v.Elem().Field(i).Addr().Interface().(*string)
+			flagset.StringVarP(ptr, longOpt, shortOpt, "", helpText)
+		case bool:
+			ptr := v.Elem().Field(i).Addr().Interface().(*bool)
+			flagset.BoolVarP(ptr, longOpt, shortOpt, false, helpText)
+		default:
+			fmt.Printf("wtf: %v\n", p)
+		}
 	}
-	return clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
-		&clientcmd.ClientConfigLoadingRules{ExplicitPath: kubeconfigPath},
-		&clientcmd.ConfigOverrides{ClusterInfo: clientcmdapi.Cluster{Server: masterUrl}}).ClientConfig()
+
+	return flagset
 }
 
 func main() {
-	var kubeconfig *string
-	var matchCatalogSource *string
-	var matchDescription *string
-	var matchInstallMode *string
-	var matchKeyword *string
-	var matchName *string
-	var packageName *string
-
-	matchCatalogSource = flag.String("catalogSource", "", "match substring in catalog source")
-	matchDescription = flag.String("description", "", "match substring in description")
-	matchName = flag.String("name", "", "match package names against glob pattern")
-	matchKeyword = flag.String("keyword", "", "match keywords")
-	matchInstallMode = flag.String("installmode", "", "match installmode")
-	kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
-	packageName = flag.String("packageName", "", "get single package")
-	flag.Parse()
-
-	config, err := BuildConfigFromFlags("", *kubeconfig)
-	if err != nil {
+	options := Options{}
+	flagset := buildFlagsFromStruct(os.Args[0], &options)
+	if err := flagset.Parse(os.Args[1:]); err != nil {
 		panic(err)
 	}
 
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		panic(err.Error())
-	}
-
-	pm := PackageManager{
-		clientset: clientset,
-	}
-
-	if *packageName != "" {
-		pkg := pm.GetPackageManifest(*packageName)
-		fmt.Printf("%+v\n", pkg)
-		return
-	}
-
-	var filters []PackageManifestFilter
-
-	if *matchName != "" {
-		filters = append(filters, MatchPackageName(*matchName))
-	}
-
-	if *matchCatalogSource != "" {
-		filters = append(filters, MatchCatalogSource(*matchCatalogSource))
-	}
-
-	if *matchDescription != "" {
-		filters = append(filters, MatchDescription(*matchDescription))
-	}
-
-	if *matchInstallMode != "" {
-		filters = append(filters, MatchInstallMode(*matchInstallMode))
-	}
-
-	if *matchKeyword != "" {
-		filters = append(filters, MatchKeyword(*matchKeyword))
-	}
-
-	res := pm.ListPackageManifests(filters...)
-	fmt.Printf("found %d packages\n", len(res))
-	for _, pkg := range res {
-		fmt.Printf("%s\n", pkg.Name)
-	}
+	fmt.Printf("options: %+v\n", options)
 }
