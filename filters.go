@@ -14,7 +14,7 @@ func MatchPackageName(pattern string) PackageManifestFilter {
 	return func(pkg *operators.PackageManifest) bool {
 		matches, err := filepath.Match(pattern, strings.ToLower(pkg.Name))
 		if err != nil {
-			panic(err)
+			return false
 		}
 
 		return matches
