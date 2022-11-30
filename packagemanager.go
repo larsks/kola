@@ -17,22 +17,22 @@ type (
 	PackageManifestFilter func(pkg *operators.PackageManifest) bool
 )
 
-func (pm *PackageManager) GetPackageManifest(packageName string) operators.PackageManifest {
+func (pm *PackageManager) GetPackageManifest(packageName string) (*operators.PackageManifest, error) {
 	var pkg operators.PackageManifest
 
 	data, err := pm.clientset.RESTClient().Get().AbsPath(
 		fmt.Sprintf("/apis/packages.operators.coreos.com/v1/namespaces/default/packagemanifests/%s", packageName)).DoRaw(context.TODO())
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	if err := json.Unmarshal(data, &pkg); err != nil {
-		panic(err)
+		return nil, err
 	}
-	return pkg
+	return &pkg, nil
 }
 
-func (pm *PackageManager) ListPackageManifests(filters ...PackageManifestFilter) []operators.PackageManifest {
+func (pm *PackageManager) ListPackageManifests(filters ...PackageManifestFilter) ([]operators.PackageManifest, error) {
 
 	pkgs := &operators.PackageManifestList{}
 	selected := []operators.PackageManifest{}
@@ -40,11 +40,11 @@ func (pm *PackageManager) ListPackageManifests(filters ...PackageManifestFilter)
 	data, err := pm.clientset.RESTClient().Get().AbsPath(
 		"/apis/packages.operators.coreos.com/v1/namespaces/default/packagemanifests").DoRaw(context.TODO())
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	if err := json.Unmarshal(data, pkgs); err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	if len(filters) > 0 {
@@ -58,9 +58,9 @@ func (pm *PackageManager) ListPackageManifests(filters ...PackageManifestFilter)
 
 			selected = append(selected, pkg)
 		}
-
-		return selected
+	} else {
+		selected = pkgs.Items
 	}
 
-	return pkgs.Items
+	return selected, nil
 }
