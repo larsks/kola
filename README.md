@@ -41,7 +41,6 @@ Flags:
   -h, --help                   help for list
   -m, --installMode string     Match package supported install mode
   -w, --keyword strings        Match package keyword
-  -U, --uncertified            Match only certified packages
 
 Global Flags:
   -k, --kubeconfig string   Path to kubernetes client configuration
@@ -85,4 +84,56 @@ Flags:
 Global Flags:
   -k, --kubeconfig string   Path to kubernetes client configuration
   -v, --verbose count       Increase log verbosity
+```
+
+## Examples
+
+### List all packages relating to "gitops"
+
+```
+$ kola list -w gitops
+2022/12/01 15:15:32 found 11 packages
+flux
+resource-locker-operator
+tf-controller
+argocd-operator
+gitops-primer
+gitwebhook-operator
+flux
+vault-config-operator
+devopsinabox
+openshift-gitops-operator
+patch-operator
+```
+
+### Show package details
+
+```
+$ kola show external-secrets-operator
+Name: external-secrets-operator
+Catalog source: Community Operators (community-operators)
+Publisher: Red Hat
+Provider: External Secrets
+Channels:
+- alpha (external-secrets-operator.v0.7.0-rc1)
+- stable (external-secrets-operator.v0.7.0-rc1)
+```
+
+### Subscribe to a package
+
+```
+$ kola subscribe external-secrets-operator
+apiVersion: Subscription
+kind: operators.coreos.com/v1alpha1
+metadata:
+  creationTimestamp: null
+  name: external-secrets-operator
+spec:
+  channel: alpha
+  installPlanApproval: Automatic
+  name: external-secrets-operator
+  source: community-operators
+  sourceNamespace: openshift-marketplace
+status:
+  lastUpdated: null
 ```
