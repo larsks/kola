@@ -1,4 +1,4 @@
-package main
+package packagemanager
 
 import (
 	"context"
@@ -16,6 +16,12 @@ type (
 
 	PackageManifestFilter func(pkg *operators.PackageManifest) bool
 )
+
+func NewPackageManager(clientset *kubernetes.Clientset) *PackageManager {
+	return &PackageManager{
+		clientset: clientset,
+	}
+}
 
 func (pm *PackageManager) GetPackageManifest(packageName string) (*operators.PackageManifest, error) {
 	var pkg operators.PackageManifest

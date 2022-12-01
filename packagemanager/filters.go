@@ -1,4 +1,4 @@
-package main
+package packagemanager
 
 import (
 	"path/filepath"
@@ -67,12 +67,13 @@ func MatchInstallMode(installmode string) PackageManifestFilter {
 		return false
 	}
 }
-func MatchKeyword(keyword string) PackageManifestFilter {
-	keyword = strings.ToLower(keyword)
+func MatchKeywords(keywords []string) PackageManifestFilter {
 	return func(pkg *operators.PackageManifest) bool {
 		for _, channel := range pkg.Status.Channels {
-			if slices.Contains(channel.CurrentCSVDesc.Keywords, keyword) {
-				return true
+			for _, keyword := range keywords {
+				if slices.Contains(channel.CurrentCSVDesc.Keywords, keyword) {
+					return true
+				}
 			}
 		}
 

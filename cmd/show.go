@@ -14,10 +14,32 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see <http://www.gnu.org/licenses/>.
 */
-package main
+package cmd
 
-import "kola/cmd"
+import (
+	"fmt"
 
-func main() {
-	cmd.Execute()
+	"github.com/spf13/cobra"
+)
+
+type (
+	ShowFlags struct {
+		Description bool `short:"d" help:"Include description in output"`
+	}
+)
+
+var showFlags = ShowFlags{}
+
+// showCmd represents the show command
+var showCmd = &cobra.Command{
+	Use:   "show",
+	Short: "Show details about a package",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("show called")
+	},
+}
+
+func init() {
+	rootCmd.AddCommand(showCmd)
+	AddFlagsFromSpec(showCmd, &showFlags, false)
 }
