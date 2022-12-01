@@ -68,17 +68,38 @@ func runShow(cmd *cobra.Command, args []string) {
 	}
 }
 
+func getKeywordsFromPackage(pkg *operators.PackageManifest) []string {
+	var keywords []string
+	kwmap := make(map[string]bool)
+
+	for _, channel := range pkg.Status.Channels {
+		for _, keyword := range channel.CurrentCSVDesc.Keywords {
+			kwmap[keyword] = true
+		}
+	}
+
+	for k := range kwmap {
+		keywords = append(keywords, k)
+	}
+
+	return keywords
+}
+
 func showPackage(pkg *operators.PackageManifest) error {
+	keywords := getKeywordsFromPackage(pkg)
+
 	data := struct {
-		Package *operators.PackageManifest
-		Flags   *ShowFlags
-	}{pkg, &showFlags}
+		Package  *operators.PackageManifest
+		Flags    *ShowFlags
+		Keywords []string
+	}{pkg, &showFlags, keywords}
 
 	tmpl, err := template.New("package").Parse(`
 Name: {{ .Package.Name }}
 Catalog source: {{ .Package.Status.CatalogSourceDisplayName }} ({{ .Package.Status.CatalogSource }})
 Publisher: {{ .Package.Status.CatalogSourcePublisher }}
 Provider: {{ .Package.Status.Provider.Name }}
+Keywords: {{ range $index, $element := .Keywords }}{{ if $index }}, {{ end }}{{ $element }}{{end}}
 Channels:
 {{ range .Package.Status.Channels -}}
   - {{ .Name }} ({{ .CurrentCSV }})
