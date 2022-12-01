@@ -10,6 +10,8 @@ import (
 	"os"
 	"text/template"
 
+	flag "github.com/spf13/pflag"
+
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	operators "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1"
 	"golang.org/x/exp/slices"
@@ -31,62 +33,60 @@ type (
 		InstallNamespace string `help:"Namespace for subscription"`
 		InstallChannel   string `help:"Select installation channel"`
 		InstallApproval  string `help:"Select manual or automatic approval for updates"`
+		Debug            bool   `envvar:"KOLA_DEBUG" hide:"true"`
 	}
 )
 
 var (
 	validInstallModes = [...]operatorsv1alpha1.InstallModeType{
+		"",
 		operatorsv1alpha1.InstallModeTypeOwnNamespace,
 		operatorsv1alpha1.InstallModeTypeSingleNamespace,
 		operatorsv1alpha1.InstallModeTypeMultiNamespace,
 		operatorsv1alpha1.InstallModeTypeAllNamespaces,
 	}
+
+	options Options
 )
 
 func (options *Options) ValidateInstallApproval(key string) error {
-	if options.InstallApproval == "" {
-		return nil
-	}
-
-	if !slices.Contains([]string{"Manual", "Automatic"}, options.InstallApproval) {
-		return ApplicationErrorType{
-			Message: fmt.Sprintf("%s is not a valid approval method", options.InstallApproval),
-			Parent:  ValidationError,
-		}
+	if !slices.Contains([]string{"", "Manual", "Automatic"}, options.InstallApproval) {
+		return NewApplicationError(fmt.Sprintf("%s is not a valid approval method", options.InstallApproval), nil)
 	}
 
 	return nil
 }
 
 func (options *Options) ValidateInstallMode(key string) error {
-	if options.InstallMode == "" {
-		return nil
-	}
-
 	for _, mode := range validInstallModes {
 		if string(mode) == options.InstallMode {
 			return nil
 		}
 	}
 
-	return ApplicationErrorType{
-		Message: fmt.Sprintf("%s is not a valid install mode", options.InstallMode),
-		Parent:  ValidationError,
-	}
+	return NewApplicationError(fmt.Sprintf("%s is not a valid install mode", options.InstallMode), nil)
 }
 
 func main() {
 	defer func() {
 		if r := recover(); r != nil {
-			if errors.Is(r.(error), ApplicationError) {
-				fmt.Printf("ERROR: %v\n", r)
-			} else {
-				panic(r)
+			err := r.(error)
+			switch {
+			case errors.Is(err, flag.ErrHelp):
+				os.Exit(0)
+			case errors.Is(err, ApplicationError):
+				log.Printf("ERROR: %v", err)
+				os.Exit(1)
+			default:
+				if options.Debug {
+					panic(err)
+				}
+				log.Printf("ERROR: %v", err)
+				os.Exit(1)
 			}
 		}
 	}()
 
-	options := Options{}
 	flagset := BuildFlagsFromStruct(os.Args[0], &options)
 	if err := flagset.Parse(os.Args[1:]); err != nil {
 		panic(err)

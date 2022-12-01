@@ -2,10 +2,12 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"reflect"
 	"strings"
 
 	flag "github.com/spf13/pflag"
+	"golang.org/x/exp/slices"
 )
 
 type (
@@ -19,11 +21,14 @@ var (
 	ApplicationError ApplicationErrorType = ApplicationErrorType{
 		Message: "An unexpected error has occurred",
 	}
-	ValidationError ApplicationErrorType = ApplicationErrorType{
-		Message: "Invalid option value",
-		Parent:  ApplicationError,
-	}
 )
+
+func NewApplicationError(msg string, wraps error) error {
+	return ApplicationErrorType{
+		Message: msg,
+		Parent:  wraps,
+	}
+}
 
 func (err ApplicationErrorType) Error() string {
 	return err.Message
@@ -82,19 +87,33 @@ func BuildFlagsFromStruct(name string, options interface{}) *flag.FlagSet {
 
 		shortOpt := field.Tag.Get("short")
 		helpText := field.Tag.Get("help")
-		//validator := v.MethodByName(fmt.Sprintf("Validate%s", field.Name))
+		envvar := field.Tag.Get("envvar")
+		defval := field.Tag.Get("default")
+		hide := field.Tag.Get("hide")
+
+		if defval == "" && envvar != "" {
+			defval = os.Getenv(envvar)
+		}
 
 		switch p := v.Elem().Field(i).Interface().(type) {
 		case string:
 			ptr := v.Elem().FieldByName(target).Addr().Interface().(*string)
-			flagset.StringVarP(ptr, longOpt, shortOpt, "", helpText)
+			flagset.StringVarP(ptr, longOpt, shortOpt, defval, helpText)
 		case bool:
 			ptr := v.Elem().FieldByName(target).Addr().Interface().(*bool)
-			flagset.BoolVarP(ptr, longOpt, shortOpt, false, helpText)
+			flagset.BoolVarP(ptr, longOpt, shortOpt, stringToBool(defval), helpText)
 		default:
-			fmt.Printf("wtf: %v\n", p)
+			fmt.Printf("unsupported: %v\n", p)
+		}
+
+		if stringToBool(hide) {
+			flagset.MarkHidden(longOpt)
 		}
 	}
 
 	return flagset
+}
+
+func stringToBool(s string) bool {
+	return slices.Contains([]string{"1", "true"}, strings.ToLower(s))
 }
