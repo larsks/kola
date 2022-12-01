@@ -17,9 +17,18 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 package cmd
 
 import (
+	"errors"
 	"fmt"
+	"kola/client"
+	"kola/packagemanager"
+	"os"
 
+	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	operators "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1"
 	"github.com/spf13/cobra"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/serializer/json"
+	"k8s.io/kubectl/pkg/scheme"
 )
 
 type (
@@ -37,12 +46,83 @@ var subscribeCmd = &cobra.Command{
 	Aliases: []string{"sub"},
 	Use:     "subscribe",
 	Short:   "Generate a Subscription for a package",
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("subscribe called")
-	},
+	Run:     runSubscribe,
 }
 
 func init() {
 	rootCmd.AddCommand(subscribeCmd)
 	AddFlagsFromSpec(subscribeCmd, &subscribeFlags, false)
+}
+
+func runSubscribe(cmd *cobra.Command, args []string) {
+	if len(args) != 1 {
+		panic(errors.New("show requires a single package name"))
+	}
+
+	clientset, err := client.GetClient(rootFlags.Kubeconfig)
+	if err != nil {
+		panic(err)
+	}
+
+	pm := packagemanager.NewPackageManager(clientset)
+	pkg, err := pm.GetPackageManifest(args[0])
+	if err != nil {
+		panic(err)
+	}
+
+	if err := subscribePackage(pkg); err != nil {
+		panic(err)
+	}
+}
+
+func subscribePackage(pkg *operators.PackageManifest) error {
+	channelName := subscribeFlags.Channel
+	if channelName == "" {
+		channelName = pkg.Status.DefaultChannel
+	}
+
+	var channel *operators.PackageChannel
+	for _, check := range pkg.Status.Channels {
+		if check.Name == channelName {
+			channel = &check
+			break
+		}
+	}
+
+	if channel == nil {
+		return fmt.Errorf("no such channel named %s for package %s",
+			channelName, pkg.Name)
+	}
+
+	namespace := subscribeFlags.Namespace
+	if namespace == "" {
+		if suggested, ok := channel.CurrentCSVDesc.Annotations["operatorframework.io/suggested-namespace"]; ok {
+			namespace = suggested
+		}
+	}
+
+	subscription := operatorsv1alpha1.Subscription{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: operatorsv1alpha1.SubscriptionKind,
+			Kind:       operatorsv1alpha1.SubscriptionCRDAPIVersion,
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: namespace,
+			Name:      pkg.Name,
+		},
+		Spec: &operatorsv1alpha1.SubscriptionSpec{
+			Package:                pkg.Name,
+			Channel:                channel.Name,
+			InstallPlanApproval:    operatorsv1alpha1.Approval(subscribeFlags.Approval),
+			CatalogSource:          pkg.Status.CatalogSource,
+			CatalogSourceNamespace: pkg.Status.CatalogSourceNamespace,
+		},
+	}
+
+	operatorsv1alpha1.AddToScheme(scheme.Scheme)
+	s := json.NewYAMLSerializer(json.DefaultMetaFactory, scheme.Scheme,
+		scheme.Scheme)
+
+	err := s.Encode(&subscription, os.Stdout)
+	return err
 }
