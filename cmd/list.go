@@ -45,8 +45,6 @@ var listCmd = &cobra.Command{
 }
 
 func runList(cmd *cobra.Command, args []string) {
-	fmt.Println("list called")
-
 	clientset, err := client.GetClient(rootFlags.Kubeconfig)
 	if err != nil {
 		panic(err)
@@ -87,7 +85,7 @@ func runList(cmd *cobra.Command, args []string) {
 		if rootFlags.Verbose > 0 {
 			fmt.Printf("%s (%s)\n", pkg.Name, pkg.Status.Channels[0].CurrentCSVDesc.DisplayName)
 		} else {
-			println(pkg.Name)
+			fmt.Printf("%s\n", pkg.Name)
 		}
 	}
 }

@@ -3,5 +3,7 @@
 ## Usage
 
 ```
-kola list [--name pattern] [--description word] [--catalogSource source] [--installMode mode]
+kola list [--description <word>] [--catalogSource <word>] [--installMode <mode>] [<pattern> [...]]
+kola show [--description] <name>
+kola subscribe [--namespace <namespace>] [--channel <channel>] [--approval <approval>] [--extra] <name>
 ```

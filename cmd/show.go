@@ -17,8 +17,13 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 package cmd
 
 import (
-	"fmt"
+	"errors"
+	"html/template"
+	"kola/client"
+	"kola/packagemanager"
+	"os"
 
+	operators "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1"
 	"github.com/spf13/cobra"
 )
 
@@ -34,12 +39,62 @@ var showFlags = ShowFlags{}
 var showCmd = &cobra.Command{
 	Use:   "show",
 	Short: "Show details about a package",
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("show called")
-	},
+	Run:   runShow,
 }
 
 func init() {
 	rootCmd.AddCommand(showCmd)
 	AddFlagsFromSpec(showCmd, &showFlags, false)
+}
+
+func runShow(cmd *cobra.Command, args []string) {
+	if len(args) != 1 {
+		panic(errors.New("show requires a single package name"))
+	}
+
+	clientset, err := client.GetClient(rootFlags.Kubeconfig)
+	if err != nil {
+		panic(err)
+	}
+
+	pm := packagemanager.NewPackageManager(clientset)
+	pkg, err := pm.GetPackageManifest(args[0])
+	if err != nil {
+		panic(err)
+	}
+
+	if err := showPackage(pkg); err != nil {
+		panic(err)
+	}
+}
+
+func showPackage(pkg *operators.PackageManifest) error {
+	data := struct {
+		Package *operators.PackageManifest
+		Flags   *ShowFlags
+	}{pkg, &showFlags}
+
+	tmpl, err := template.New("package").Parse(`
+Name: {{ .Package.Name }}
+Catalog source: {{ .Package.Status.CatalogSourceDisplayName }} ({{ .Package.Status.CatalogSource }})
+Publisher: {{ .Package.Status.CatalogSourcePublisher }}
+Provider: {{ .Package.Status.Provider.Name }}
+Channels:
+{{ range .Package.Status.Channels -}}
+  - {{ .Name }} ({{ .CurrentCSV }})
+{{ end }}
+{{ if .Flags.Description -}}
+Description:
+{{ (index .Package.Status.Channels 0).CurrentCSVDesc.LongDescription }}
+{{ end -}}
+`)
+	if err != nil {
+		return err
+	}
+
+	if err := tmpl.Execute(os.Stdout, data); err != nil {
+		return err
+	}
+
+	return nil
 }
