@@ -27,12 +27,12 @@ import (
 
 type (
 	ListFlags struct {
-		CatalogSource string   `short:"c" help:"packagemanager.Match string in package catalog source"`
-		Description   string   `short:"d" help:"packagemanager.Match string in package description"`
-		InstallMode   string   `short:"m" help:"packagemanager.Match package supported install mode"`
-		Keyword       []string `short:"w" help:"packagemanager.Match package keyword"`
-		Certified     bool     `short:"C" help:"packagemanager.Match only certified packages"`
-		Uncertified   bool     `short:"U" help:"packagemanager.Match only certified packages"`
+		CatalogSource string   `short:"c" help:"Match string in package catalog source"`
+		Description   string   `short:"d" help:"Match string in package description"`
+		InstallMode   string   `short:"m" help:"Match package supported install mode"`
+		Keyword       []string `short:"w" help:"Match package keyword"`
+		Certified     bool     `short:"C" help:"Match only certified packages"`
+		Uncertified   bool     `short:"U" help:"Match only certified packages"`
 		Glob          bool     `short:"g" help:"Arguments are glob patterns instead of substrings"`
 	}
 )
