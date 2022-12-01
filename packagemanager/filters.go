@@ -2,6 +2,7 @@ package packagemanager
 
 import (
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	operators "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1"
@@ -67,6 +68,7 @@ func MatchInstallMode(installmode string) PackageManifestFilter {
 		return false
 	}
 }
+
 func MatchKeywords(keywords []string) PackageManifestFilter {
 	return func(pkg *operators.PackageManifest) bool {
 		for _, channel := range pkg.Status.Channels {
@@ -74,6 +76,19 @@ func MatchKeywords(keywords []string) PackageManifestFilter {
 				if slices.Contains(channel.CurrentCSVDesc.Keywords, keyword) {
 					return true
 				}
+			}
+		}
+
+		return false
+	}
+}
+
+func MatchCertified(certified bool) PackageManifestFilter {
+	certifiedString := strconv.FormatBool(certified)
+	return func(pkg *operators.PackageManifest) bool {
+		for _, channel := range pkg.Status.Channels {
+			if channel.CurrentCSVDesc.Annotations["certified"] == certifiedString {
+				return true
 			}
 		}
 

@@ -32,6 +32,7 @@ type (
 		InstallMode   string   `short:"m" help:"packagemanager.Match package supported install mode"`
 		Keyword       []string `short:"w" help:"packagemanager.Match package keyword"`
 		Certified     bool     `short:"C" help:"packagemanager.Match only certified packages"`
+		Uncertified   bool     `short:"U" help:"packagemanager.Match only certified packages"`
 	}
 )
 
@@ -72,6 +73,12 @@ func runList(cmd *cobra.Command, args []string) {
 
 	if len(listFlags.Keyword) > 0 {
 		filters = append(filters, packagemanager.MatchKeywords(listFlags.Keyword))
+	}
+
+	if listFlags.Certified {
+		filters = append(filters, packagemanager.MatchCertified(true))
+	} else if listFlags.Uncertified {
+		filters = append(filters, packagemanager.MatchCertified(false))
 	}
 
 	packages, err := pm.ListPackageManifests(filters...)
