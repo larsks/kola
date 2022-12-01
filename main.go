@@ -25,7 +25,6 @@ type (
 		Description      string `short:"d" help:"Match string in package description"`
 		InstallMode      string `short:"m" help:"Match package supported install mode"`
 		Keyword          string `short:"w" help:"Match package keyword"`
-		PackageName      string `short:"n" long:"name" help:"Match package name"`
 		Certified        bool   `short:"C" help:"Match only certified packages"`
 		Show             bool   `short:"s" help:"Show details about matched packages"`
 		Subscribe        bool   `short:"S" help:"Generate subscriptions for matched packages"`
@@ -110,20 +109,10 @@ func main() {
 		clientset: clientset,
 	}
 
-	//	if options.PackageName != "" {
-	//		pkg, err := pm.GetPackageManifest(options.PackageName)
-	//		if err != nil {
-	//			panic(err)
-	//		}
-	//
-	//		fmt.Printf("%+v\n", pkg)
-	//		return
-	//	}
-
 	var filters []PackageManifestFilter
 
-	if options.PackageName != "" {
-		filters = append(filters, MatchPackageName(options.PackageName))
+	if len(flagset.Args()) > 0 {
+		filters = append(filters, MatchPackageNames(flagset.Args()...))
 	}
 
 	if options.CatalogSource != "" {

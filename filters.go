@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"path/filepath"
 	"strings"
 
@@ -9,14 +8,26 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-func MatchPackageName(pattern string) PackageManifestFilter {
-	pattern = fmt.Sprintf("*%s*", strings.ToLower(pattern))
+func MatchPackageNames(patterns ...string) PackageManifestFilter {
+	for i := range patterns {
+		patterns[i] = strings.ToLower(patterns[i])
+	}
+
 	return func(pkg *operators.PackageManifest) bool {
-		matches, err := filepath.Match(pattern, strings.ToLower(pkg.Name))
-		if err != nil {
-			return false
+		for _, pattern := range patterns {
+			if matches, _ := filepath.Match(pattern, strings.ToLower(pkg.Name)); matches {
+				return true
+			}
 		}
 
+		return false
+	}
+}
+
+func MatchPackageName(pattern string) PackageManifestFilter {
+	pattern = strings.ToLower(pattern)
+	return func(pkg *operators.PackageManifest) bool {
+		matches, _ := filepath.Match(pattern, strings.ToLower(pkg.Name))
 		return matches
 	}
 }
