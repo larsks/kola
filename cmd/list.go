@@ -33,6 +33,7 @@ type (
 		Keyword       []string `short:"w" help:"packagemanager.Match package keyword"`
 		Certified     bool     `short:"C" help:"packagemanager.Match only certified packages"`
 		Uncertified   bool     `short:"U" help:"packagemanager.Match only certified packages"`
+		Glob          bool     `short:"g" help:"Arguments are glob patterns instead of substrings"`
 	}
 )
 
@@ -56,7 +57,11 @@ func runList(cmd *cobra.Command, args []string) {
 	var filters []packagemanager.PackageManifestFilter
 
 	if len(args) > 0 {
-		filters = append(filters, packagemanager.MatchPackageNames(args...))
+		if listFlags.Glob {
+			filters = append(filters, packagemanager.MatchPackageGlobs(args...))
+		} else {
+			filters = append(filters, packagemanager.MatchPackageSubstrings(args...))
+		}
 	}
 
 	if listFlags.CatalogSource != "" {

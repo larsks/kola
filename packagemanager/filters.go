@@ -9,7 +9,7 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-func MatchPackageNames(patterns ...string) PackageManifestFilter {
+func MatchPackageGlobs(patterns ...string) PackageManifestFilter {
 	for i := range patterns {
 		patterns[i] = strings.ToLower(patterns[i])
 	}
@@ -17,6 +17,22 @@ func MatchPackageNames(patterns ...string) PackageManifestFilter {
 	return func(pkg *operators.PackageManifest) bool {
 		for _, pattern := range patterns {
 			if matches, _ := filepath.Match(pattern, strings.ToLower(pkg.Name)); matches {
+				return true
+			}
+		}
+
+		return false
+	}
+}
+
+func MatchPackageSubstrings(patterns ...string) PackageManifestFilter {
+	for i := range patterns {
+		patterns[i] = strings.ToLower(patterns[i])
+	}
+
+	return func(pkg *operators.PackageManifest) bool {
+		for _, pattern := range patterns {
+			if strings.Contains(strings.ToLower(pkg.Name), pattern) {
 				return true
 			}
 		}
