@@ -15,11 +15,11 @@ import (
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	operators "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/serializer/json"
+	"k8s.io/kubectl/pkg/scheme"
 
 	"golang.org/x/exp/slices"
-	"k8s.io/apimachinery/pkg/runtime/serializer/json"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/kubernetes/scheme"
 )
 
 type (
@@ -137,28 +137,51 @@ func main() {
 		filters = append(filters, MatchKeyword(options.Keyword))
 	}
 
-	res, err := pm.ListPackageManifests(filters...)
+	packages, err := pm.ListPackageManifests(filters...)
 	if err != nil {
 		panic(err)
 	}
 
-	log.Printf("found %d packages", len(res))
-	for _, pkg := range res {
-		var err error
+	log.Printf("found %d packages", len(packages))
 
-		switch {
-		case options.Show:
-			err = showPackage(&pkg, &options)
-		case options.Subscribe:
-			err = subscribePackage(&pkg, &options)
-		default:
-			fmt.Printf("%s\n", pkg.Name)
+	switch {
+	case options.Show:
+		err = showAllPackages(packages, &options)
+	case options.Subscribe:
+		err = subscribeAllPackages(packages, &options)
+	default:
+		err = listAllPackages(packages, &options)
+	}
+
+	if err != nil {
+		panic(err)
+	}
+}
+
+func listAllPackages(pkgs []operators.PackageManifest, options *Options) error {
+	for _, pkg := range pkgs {
+		println(pkg.Name)
+	}
+
+	return nil
+}
+
+func showAllPackages(pkgs []operators.PackageManifest, options *Options) error {
+	return nil
+}
+
+func subscribeAllPackages(pkgs []operators.PackageManifest, options *Options) error {
+	for i, pkg := range pkgs {
+		if i != 0 {
+			os.Stdout.Write([]byte("---\n"))
 		}
 
+		err := subscribePackage(&pkg, options)
 		if err != nil {
-			panic(err)
+			return err
 		}
 	}
+	return nil
 }
 
 func showPackage(pkg *operators.PackageManifest, options *Options) error {
@@ -207,7 +230,8 @@ func subscribePackage(pkg *operators.PackageManifest, options *Options) error {
 	}
 
 	if channel == nil {
-		return NewApplicationError(fmt.Sprintf("no such channel named %s", channelName), nil)
+		return NewApplicationError(fmt.Sprintf("no such channel named %s for package %s",
+			channelName, pkg.Name), nil)
 	}
 
 	namespace := options.Namespace
@@ -234,6 +258,7 @@ func subscribePackage(pkg *operators.PackageManifest, options *Options) error {
 			CatalogSourceNamespace: pkg.Status.CatalogSourceNamespace,
 		},
 	}
+
 	operatorsv1alpha1.AddToScheme(scheme.Scheme)
 	s := json.NewYAMLSerializer(json.DefaultMetaFactory, scheme.Scheme,
 		scheme.Scheme)
