@@ -30,9 +30,11 @@ type (
 		Subscribe        bool   `short:"S" help:"Generate subscriptions for matched packages"`
 		ShowDescription  bool   `short:"D" help:"Show package descriptions when using --show"`
 		InstallNamespace string `help:"Namespace for subscription"`
-		InstallChannel   string `help:"Select installation channel"`
-		InstallApproval  string `help:"Select manual or automatic approval for updates"`
 		Debug            bool   `envvar:"KOLA_DEBUG" hide:"true"`
+
+		Channel   string `help:"Set channel for subscription"`
+		Approval  string `help:"Set install plan approval for subscription" default:"Automatic"`
+		Namespace string `help:"Set namespace for subscription"`
 	}
 )
 
@@ -48,9 +50,9 @@ var (
 	options Options
 )
 
-func (options *Options) ValidateInstallApproval(key string) error {
-	if !slices.Contains([]string{"", "Manual", "Automatic"}, options.InstallApproval) {
-		return NewApplicationError(fmt.Sprintf("%s is not a valid approval method", options.InstallApproval), nil)
+func (options *Options) ValidateApproval(key string) error {
+	if !slices.Contains([]string{"", "Manual", "Automatic"}, options.Approval) {
+		return NewApplicationError(fmt.Sprintf("%s is not a valid approval method", options.Approval), nil)
 	}
 
 	return nil
@@ -144,7 +146,7 @@ func main() {
 		case options.Show:
 			err = showPackage(&pkg, &options)
 		case options.Subscribe:
-			fmt.Printf("subscribe\n")
+			err = subscribePackage(&pkg, &options)
 		default:
 			fmt.Printf("%s\n", pkg.Name)
 		}
@@ -174,6 +176,63 @@ Channels:
 Description:
 {{ (index .Package.Status.Channels 0).CurrentCSVDesc.LongDescription }}
 {{ end -}}
+`)
+	if err != nil {
+		return err
+	}
+
+	if err := tmpl.Execute(os.Stdout, data); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func subscribePackage(pkg *operators.PackageManifest, options *Options) error {
+	channelName := options.Channel
+	if channelName == "" {
+		channelName = pkg.Status.DefaultChannel
+	}
+
+	var channel *operators.PackageChannel
+	for _, check := range pkg.Status.Channels {
+		if check.Name == channelName {
+			channel = &check
+			break
+		}
+	}
+
+	if channel == nil {
+		return NewApplicationError(fmt.Sprintf("no such channel named %s", channelName), nil)
+	}
+
+	namespace := options.Namespace
+	if namespace == "" {
+		if suggested, ok := channel.CurrentCSVDesc.Annotations["operatorframework.io/suggested-namespace"]; ok {
+			namespace = suggested
+		}
+	}
+
+	data := struct {
+		Package   *operators.PackageManifest
+		Options   *Options
+		Channel   *operators.PackageChannel
+		Namespace string
+	}{pkg, options, channel, namespace}
+
+	tmpl, err := template.New("package").Parse(`
+---
+apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: {{ .Package.Name }}
+  namespace: {{ .Namespace }}
+spec:
+  channel: {{ .Channel.Name }}
+  installPlanApproval: {{ .Options.Approval }}
+  name: {{ .Package.Name }}
+  source: {{ .Package.Status.CatalogSource }}
+  sourceNamespace: {{ .Package.Status.CatalogSourceNamespace }}
 `)
 	if err != nil {
 		return err
