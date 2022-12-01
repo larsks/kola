@@ -68,12 +68,12 @@ func ValidateOptions(options interface{}) error {
 func BuildFlagsFromStruct(name string, options interface{}) *flag.FlagSet {
 	flagset := flag.NewFlagSet(name, flag.ExitOnError)
 
-	t := reflect.TypeOf(options)
-	e := t.Elem()
-	v := reflect.ValueOf(options)
+	optType := reflect.TypeOf(options)
+	optElem := optType.Elem()
+	optValue := reflect.ValueOf(options)
 
-	for i := 0; i < e.NumField(); i++ {
-		field := e.Field(i)
+	for i := 0; i < optElem.NumField(); i++ {
+		field := optElem.Field(i)
 
 		target := field.Tag.Get("target")
 		if target == "" {
@@ -95,12 +95,12 @@ func BuildFlagsFromStruct(name string, options interface{}) *flag.FlagSet {
 			defval = os.Getenv(envvar)
 		}
 
-		switch p := v.Elem().Field(i).Interface().(type) {
+		switch p := optValue.Elem().Field(i).Interface().(type) {
 		case string:
-			ptr := v.Elem().FieldByName(target).Addr().Interface().(*string)
+			ptr := optValue.Elem().FieldByName(target).Addr().Interface().(*string)
 			flagset.StringVarP(ptr, longOpt, shortOpt, defval, helpText)
 		case bool:
-			ptr := v.Elem().FieldByName(target).Addr().Interface().(*bool)
+			ptr := optValue.Elem().FieldByName(target).Addr().Interface().(*bool)
 			flagset.BoolVarP(ptr, longOpt, shortOpt, stringToBool(defval), helpText)
 		default:
 			fmt.Printf("unsupported: %v\n", p)
