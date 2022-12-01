@@ -14,8 +14,12 @@ import (
 
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	operators "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"golang.org/x/exp/slices"
+	"k8s.io/apimachinery/pkg/runtime/serializer/json"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/scheme"
 )
 
 type (
@@ -51,7 +55,7 @@ var (
 )
 
 func (options *Options) ValidateApproval(key string) error {
-	if !slices.Contains([]string{"", "Manual", "Automatic"}, options.Approval) {
+	if !slices.Contains([]string{"", string(operatorsv1alpha1.ApprovalManual), string(operatorsv1alpha1.ApprovalAutomatic)}, options.Approval) {
 		return NewApplicationError(fmt.Sprintf("%s is not a valid approval method", options.Approval), nil)
 	}
 
@@ -213,34 +217,27 @@ func subscribePackage(pkg *operators.PackageManifest, options *Options) error {
 		}
 	}
 
-	data := struct {
-		Package   *operators.PackageManifest
-		Options   *Options
-		Channel   *operators.PackageChannel
-		Namespace string
-	}{pkg, options, channel, namespace}
-
-	tmpl, err := template.New("package").Parse(`
----
-apiVersion: operators.coreos.com/v1alpha1
-kind: Subscription
-metadata:
-  name: {{ .Package.Name }}
-  namespace: {{ .Namespace }}
-spec:
-  channel: {{ .Channel.Name }}
-  installPlanApproval: {{ .Options.Approval }}
-  name: {{ .Package.Name }}
-  source: {{ .Package.Status.CatalogSource }}
-  sourceNamespace: {{ .Package.Status.CatalogSourceNamespace }}
-`)
-	if err != nil {
-		return err
+	subscription := operatorsv1alpha1.Subscription{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: operatorsv1alpha1.SubscriptionKind,
+			Kind:       operatorsv1alpha1.SubscriptionCRDAPIVersion,
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: namespace,
+			Name:      pkg.Name,
+		},
+		Spec: &operatorsv1alpha1.SubscriptionSpec{
+			Package:                pkg.Name,
+			Channel:                channel.Name,
+			InstallPlanApproval:    operatorsv1alpha1.Approval(options.Approval),
+			CatalogSource:          pkg.Status.CatalogSource,
+			CatalogSourceNamespace: pkg.Status.CatalogSourceNamespace,
+		},
 	}
+	operatorsv1alpha1.AddToScheme(scheme.Scheme)
+	s := json.NewYAMLSerializer(json.DefaultMetaFactory, scheme.Scheme,
+		scheme.Scheme)
 
-	if err := tmpl.Execute(os.Stdout, data); err != nil {
-		return err
-	}
-
-	return nil
+	err := s.Encode(&subscription, os.Stdout)
+	return err
 }
