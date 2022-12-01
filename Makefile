@@ -5,6 +5,11 @@ VERSION = $(shell git describe --tags --exact-match 2> /dev/null || echo develop
 COMMIT = $(shell git rev-parse --short=10 HEAD)
 DATE = $(shell date -u +"%Y-%m-%dT%H:%M:%S")
 
+DESTDIR=
+prefix=$(HOME)
+bindir=$(prefix)/bin
+INSTALL=install
+
 BUILDDATA = \
 	-X "kola/version.Version=$(VERSION)" \
 	-X "kola/version.BuildDate=$(DATE)" \
@@ -16,6 +21,9 @@ all: $(TARGET)
 
 $(TARGET): $(SRC)
 	go build $(LDFLAGS) -o $(TARGET)
+
+install: $(TARGET)
+	$(INSTALL) -m 755 $(TARGET) $(DESTDIR)$(bindir)/$(TARGET)
 
 clean:
 	rm -f $(TARGET)
