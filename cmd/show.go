@@ -17,7 +17,6 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 package cmd
 
 import (
-	"errors"
 	"html/template"
 	"kola/client"
 	"kola/packagemanager"
@@ -29,7 +28,7 @@ import (
 
 type (
 	ShowFlags struct {
-		Description bool `short:"d" help:"Include description in output"`
+		Description bool `short:"d" help:"Include description in output (warning: can be long)"`
 	}
 )
 
@@ -48,23 +47,21 @@ func init() {
 }
 
 func runShow(cmd *cobra.Command, args []string) {
-	if len(args) != 1 {
-		panic(errors.New("show requires a single package name"))
-	}
-
 	clientset, err := client.GetClient(rootFlags.Kubeconfig)
 	if err != nil {
 		panic(err)
 	}
 
 	pm := packagemanager.NewPackageManager(clientset)
-	pkg, err := pm.GetPackageManifest(args[0])
-	if err != nil {
-		panic(err)
-	}
 
-	if err := showPackage(pkg); err != nil {
-		panic(err)
+	for _, pkgName := range args {
+		pkg, err := pm.GetPackageManifest(pkgName)
+		if err != nil {
+			panic(err)
+		}
+		if err := showPackage(pkg); err != nil {
+			panic(err)
+		}
 	}
 }
 
