@@ -3,10 +3,12 @@ module kola
 go 1.19
 
 require (
+	github.com/adrg/xdg v0.4.0
 	github.com/operator-framework/api v0.16.0
 	github.com/operator-framework/operator-lifecycle-manager v0.22.0
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/pflag v1.0.5
+	go.etcd.io/bbolt v1.3.6
 	golang.org/x/exp v0.0.0-20221126150942-6ab00d035af9
 	k8s.io/apimachinery v0.24.0
 	k8s.io/client-go v0.24.0
