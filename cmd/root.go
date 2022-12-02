@@ -25,24 +25,18 @@ import (
 type (
 	RootFlags struct {
 		Kubeconfig string `short:"k" help:"Path to kubernetes client configuration"`
-		Verbose    int    `subtype:"counter" short:"v" help:"Increase log verbosity"`
+		Verbose    int    `subtype:"counter" short:"v" help:"Increase output verbosity"`
 		Debug      bool   `help:"Traceback on panic" hide:"true"`
 	}
 )
 
-// rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "kola",
 	Short: "Interact with OLM package manifests",
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
-	// Run: func(cmd *cobra.Command, args []string) { },
 }
 
 var rootFlags = RootFlags{}
 
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	err := rootCmd.Execute()
 	if err != nil {

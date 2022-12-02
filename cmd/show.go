@@ -28,7 +28,6 @@ import (
 
 type (
 	ShowFlags struct {
-		Description bool `short:"d" help:"Include description in output (warning: can be long)"`
 	}
 )
 
@@ -89,19 +88,20 @@ func showPackage(pkg *operators.PackageManifest) error {
 		Package  *operators.PackageManifest
 		Flags    *ShowFlags
 		Keywords []string
-	}{pkg, &showFlags, keywords}
+		Verbose  int
+	}{pkg, &showFlags, keywords, rootFlags.Verbose}
 
 	tmpl, err := template.New("package").Parse(`
 Name: {{ .Package.Name }}
 Catalog source: {{ .Package.Status.CatalogSourceDisplayName }} ({{ .Package.Status.CatalogSource }})
 Publisher: {{ .Package.Status.CatalogSourcePublisher }}
-Provider: {{ .Package.Status.Provider.Name }}
+Provider: {{ .Package.Status.Provider.Name }}{{ if .Package.Status.Provider.URL }} ({{ .Package.Status.Provider.URL }}){{ end }}
 Keywords: {{ range $index, $element := .Keywords }}{{ if $index }}, {{ end }}{{ $element }}{{end}}
 Channels:
 {{ range .Package.Status.Channels -}}
   - {{ .Name }} ({{ .CurrentCSV }})
 {{ end }}
-{{ if .Flags.Description -}}
+{{ if (gt .Verbose 0) }}
 Description:
 {{ (index .Package.Status.Channels 0).CurrentCSVDesc.LongDescription }}
 {{ end -}}

@@ -91,8 +91,10 @@ func runList(cmd *cobra.Command, args []string) {
 	log.Printf("found %d packages", len(packages))
 
 	for _, pkg := range packages {
-		if rootFlags.Verbose > 0 {
-			fmt.Printf("%s (%s)\n", pkg.Name, pkg.Status.Channels[0].CurrentCSVDesc.DisplayName)
+		if rootFlags.Verbose > 1 {
+			fmt.Printf("%s/%s %s\n", pkg.Status.CatalogSource, pkg.Name, pkg.Status.Channels[0].CurrentCSVDesc.DisplayName)
+		} else if rootFlags.Verbose > 0 {
+			fmt.Printf("%s/%s\n", pkg.Status.CatalogSource, pkg.Name)
 		} else {
 			fmt.Printf("%s\n", pkg.Name)
 		}
