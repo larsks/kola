@@ -101,23 +101,26 @@ func (cache *BoltCache) Start() error {
 }
 
 func (cache *BoltCache) Get(key string) ([]byte, error) {
-	var store []byte
+	var data []byte
 	var cv cacheValue
 
+	// We don't check the return value here because this
+	// always returns successfully.
 	cache.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(cache.cacheName))
-		store = b.Get([]byte(key))
+		data = b.Get([]byte(key))
 		return nil
 	})
 
-	if store == nil {
+	if data == nil {
 		return nil, nil
 	}
 
-	if err := json.Unmarshal(store, &cv); err != nil {
+	if err := json.Unmarshal(data, &cv); err != nil {
 		return nil, err
 	}
 
+	// Return nil if cache value has expired.
 	if cache.lifetime > 0 && time.Now().Sub(cv.ts) > cache.lifetime {
 		return nil, nil
 	}
@@ -126,18 +129,17 @@ func (cache *BoltCache) Get(key string) ([]byte, error) {
 }
 
 func (cache *BoltCache) Put(key string, value []byte) error {
-	cv := cacheValue{
+	data, err := json.Marshal(cacheValue{
 		value: value,
 		ts:    time.Now(),
-	}
-	store, err := json.Marshal(cv)
+	})
 	if err != nil {
 		return err
 	}
 
 	err = cache.db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(cache.cacheName))
-		err := b.Put([]byte(key), store)
+		err := b.Put([]byte(key), data)
 		return err
 	})
 
