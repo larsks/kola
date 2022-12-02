@@ -13,6 +13,10 @@ import (
 	"golang.org/x/exp/slices"
 )
 
+func longOptFromFieldName(s string) string {
+	return strings.ToLower(string(s[0])) + string(s[1:])
+}
+
 func AddFlagsFromSpec(command *cobra.Command, spec interface{}, persistent bool) {
 	specType := reflect.TypeOf(spec)
 	specElem := specType.Elem()
@@ -28,7 +32,7 @@ func AddFlagsFromSpec(command *cobra.Command, spec interface{}, persistent bool)
 
 		longOpt := field.Tag.Get("long")
 		if longOpt == "" {
-			longOpt = strings.ToLower(string(field.Name[0])) + string(field.Name[1:])
+			longOpt = longOptFromFieldName(field.Name)
 		}
 
 		shortOpt := field.Tag.Get("short")
@@ -48,6 +52,8 @@ func AddFlagsFromSpec(command *cobra.Command, spec interface{}, persistent bool)
 		} else {
 			flagset = command.Flags()
 		}
+		fmt.Printf("short %s long %s envvar %s help %s\n",
+			shortOpt, longOpt, envvar, helpText)
 
 		switch p := specValue.Elem().Field(i).Interface().(type) {
 		case string:
