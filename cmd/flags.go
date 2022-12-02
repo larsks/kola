@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
@@ -66,6 +67,9 @@ func AddFlagsFromSpec(command *cobra.Command, spec interface{}, persistent bool)
 		case bool:
 			ptr := specValue.Elem().FieldByName(target).Addr().Interface().(*bool)
 			flagset.BoolVarP(ptr, longOpt, shortOpt, stringToBool(defval), helpText)
+		case time.Duration:
+			ptr := specValue.Elem().FieldByName(target).Addr().Interface().(*time.Duration)
+			flagset.DurationVarP(ptr, longOpt, shortOpt, stringToDuration(defval), helpText)
 		default:
 			fmt.Printf("unsupported: %v\n", p)
 		}
@@ -84,6 +88,12 @@ func stringToInt(s string) int {
 	if val, err := strconv.Atoi(s); err == nil {
 		return val
 	}
+	return 0
+}
 
+func stringToDuration(s string) time.Duration {
+	if val, err := time.ParseDuration(s); err == nil {
+		return val
+	}
 	return 0
 }

@@ -18,8 +18,6 @@ package cmd
 
 import (
 	"html/template"
-	"kola/client"
-	"kola/packagemanager"
 	"os"
 
 	operators "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1"
@@ -46,12 +44,10 @@ func init() {
 }
 
 func runShow(cmd *cobra.Command, args []string) {
-	clientset, err := client.GetClient(rootFlags.Kubeconfig)
+	pm, err := getCachedPackageManager(rootFlags.Kubeconfig)
 	if err != nil {
 		panic(err)
 	}
-
-	pm := packagemanager.NewPackageManager(clientset)
 
 	for _, pkgName := range args {
 		pkg, err := pm.GetPackageManifest(pkgName)
