@@ -19,8 +19,6 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"kola/client"
-	"kola/packagemanager"
 	"os"
 
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
@@ -59,12 +57,11 @@ func runSubscribe(cmd *cobra.Command, args []string) {
 		panic(errors.New("show requires a single package name"))
 	}
 
-	clientset, err := client.GetClient(rootFlags.Kubeconfig)
+	pm, err := getCachedPackageManager(rootFlags.Kubeconfig)
 	if err != nil {
 		panic(err)
 	}
 
-	pm := packagemanager.NewPackageManager(clientset)
 	pkg, err := pm.GetPackageManifest(args[0])
 	if err != nil {
 		panic(err)

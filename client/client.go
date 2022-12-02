@@ -2,6 +2,7 @@ package client
 
 import (
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
@@ -31,16 +32,16 @@ func BuildConfigFromFlags(masterUrl, kubeconfigPath string) (*restclient.Config,
 		&clientcmd.ConfigOverrides{ClusterInfo: clientcmdapi.Cluster{Server: masterUrl}}).ClientConfig()
 }
 
-func GetClient(kubeconfig string) (*kubernetes.Clientset, error) {
+func GetClient(kubeconfig string) (*rest.Config, *kubernetes.Clientset, error) {
 	config, err := BuildConfigFromFlags("", kubeconfig)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return clientset, nil
+	return config, clientset, nil
 }

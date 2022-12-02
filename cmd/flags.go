@@ -6,11 +6,18 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 
+	"github.com/fatih/camelcase"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"golang.org/x/exp/slices"
 )
+
+func longOptFromFieldName(s string) string {
+	parts := camelcase.Split(s)
+	return strings.ToLower(strings.Join(parts, "-"))
+}
 
 func AddFlagsFromSpec(command *cobra.Command, spec interface{}, persistent bool) {
 	specType := reflect.TypeOf(spec)
@@ -27,7 +34,7 @@ func AddFlagsFromSpec(command *cobra.Command, spec interface{}, persistent bool)
 
 		longOpt := field.Tag.Get("long")
 		if longOpt == "" {
-			longOpt = strings.ToLower(string(field.Name[0])) + string(field.Name[1:])
+			longOpt = longOptFromFieldName(field.Name)
 		}
 
 		shortOpt := field.Tag.Get("short")
@@ -47,6 +54,8 @@ func AddFlagsFromSpec(command *cobra.Command, spec interface{}, persistent bool)
 		} else {
 			flagset = command.Flags()
 		}
+		fmt.Printf("short %s long %s envvar %s help %s\n",
+			shortOpt, longOpt, envvar, helpText)
 
 		switch p := specValue.Elem().Field(i).Interface().(type) {
 		case string:
@@ -66,6 +75,9 @@ func AddFlagsFromSpec(command *cobra.Command, spec interface{}, persistent bool)
 		case bool:
 			ptr := specValue.Elem().FieldByName(target).Addr().Interface().(*bool)
 			flagset.BoolVarP(ptr, longOpt, shortOpt, stringToBool(defval), helpText)
+		case time.Duration:
+			ptr := specValue.Elem().FieldByName(target).Addr().Interface().(*time.Duration)
+			flagset.DurationVarP(ptr, longOpt, shortOpt, stringToDuration(defval), helpText)
 		default:
 			fmt.Printf("unsupported: %v\n", p)
 		}
@@ -84,6 +96,12 @@ func stringToInt(s string) int {
 	if val, err := strconv.Atoi(s); err == nil {
 		return val
 	}
+	return 0
+}
 
+func stringToDuration(s string) time.Duration {
+	if val, err := time.ParseDuration(s); err == nil {
+		return val
+	}
 	return 0
 }

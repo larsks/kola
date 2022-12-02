@@ -18,7 +18,6 @@ package cmd
 
 import (
 	"fmt"
-	"kola/client"
 	"kola/packagemanager"
 	"log"
 
@@ -46,12 +45,10 @@ var listCmd = &cobra.Command{
 }
 
 func runList(cmd *cobra.Command, args []string) {
-	clientset, err := client.GetClient(rootFlags.Kubeconfig)
+	pm, err := getCachedPackageManager(rootFlags.Kubeconfig)
 	if err != nil {
 		panic(err)
 	}
-
-	pm := packagemanager.NewPackageManager(clientset)
 
 	var filters []packagemanager.PackageManifestFilter
 

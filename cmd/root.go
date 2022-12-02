@@ -17,16 +17,20 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 package cmd
 
 import (
+	"log"
 	"os"
+	"time"
 
 	"github.com/spf13/cobra"
 )
 
 type (
 	RootFlags struct {
-		Kubeconfig string `short:"k" help:"Path to kubernetes client configuration"`
-		Verbose    int    `subtype:"counter" short:"v" help:"Increase output verbosity"`
-		Debug      bool   `help:"Traceback on panic" hide:"true"`
+		Kubeconfig    string        `short:"k" help:"Path to kubernetes client configuration"`
+		Verbose       int           `subtype:"counter" short:"v" help:"Increase output verbosity"`
+		Debug         bool          `help:"Traceback on panic" hide:"true"`
+		CacheLifetime time.Duration `default:"10m" help:"Set cache lifetime"`
+		NoCache       bool          `help:"Disable local caching of results"`
 	}
 )
 
@@ -38,6 +42,14 @@ var rootCmd = &cobra.Command{
 var rootFlags = RootFlags{}
 
 func Execute() {
+	defer func() {
+		if !rootFlags.Debug {
+			if r := recover(); r != nil {
+				err := r.(error)
+				log.Fatalf("ERROR: %v", err)
+			}
+		}
+	}()
 	err := rootCmd.Execute()
 	if err != nil {
 		os.Exit(1)
