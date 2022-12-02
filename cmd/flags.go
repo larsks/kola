@@ -8,13 +8,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fatih/camelcase"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"golang.org/x/exp/slices"
 )
 
 func longOptFromFieldName(s string) string {
-	return strings.ToLower(string(s[0])) + string(s[1:])
+	parts := camelcase.Split(s)
+	return strings.ToLower(strings.Join(parts, "-"))
 }
 
 func AddFlagsFromSpec(command *cobra.Command, spec interface{}, persistent bool) {
