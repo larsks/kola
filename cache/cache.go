@@ -1,9 +1,11 @@
 package cache
 
 import (
+	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/adrg/xdg"
 	bolt "go.etcd.io/bbolt"
@@ -18,9 +20,48 @@ type (
 	BoltCache struct {
 		cacheDirectory string
 		cacheName      string
+		lifetime       time.Duration
 		db             *bolt.DB
 	}
+
+	cacheValue struct {
+		value []byte
+		ts    time.Time
+	}
+
+	cacheValueJSON struct {
+		Value []byte
+		Ts    []byte
+	}
 )
+
+func (cv cacheValue) MarshalJSON() ([]byte, error) {
+	store := cacheValueJSON{
+		Value: cv.value,
+		Ts:    []byte(cv.ts.Format(time.RFC3339)),
+	}
+
+	v, err := json.Marshal(store)
+	return v, err
+}
+
+func (cv *cacheValue) UnmarshalJSON(data []byte) error {
+	var store cacheValueJSON
+	err := json.Unmarshal(data, &store)
+	if err != nil {
+		return err
+	}
+
+	ts, err := time.Parse(time.RFC3339, string(store.Ts))
+	if err != nil {
+		return err
+	}
+
+	cv.value = store.Value
+	cv.ts = ts
+
+	return nil
+}
 
 func NewCache(appName, cacheName string) *BoltCache {
 	cacheDirectory := filepath.Join(xdg.CacheHome, appName)
@@ -28,6 +69,11 @@ func NewCache(appName, cacheName string) *BoltCache {
 		cacheDirectory: cacheDirectory,
 		cacheName:      cacheName,
 	}
+}
+
+func (cache *BoltCache) WithLifetime(lifetime time.Duration) *BoltCache {
+	cache.lifetime = lifetime
+	return cache
 }
 
 func (cache *BoltCache) WithCacheDirectory(dir string) *BoltCache {
@@ -55,21 +101,43 @@ func (cache *BoltCache) Start() error {
 }
 
 func (cache *BoltCache) Get(key string) ([]byte, error) {
-	var value []byte
+	var store []byte
+	var cv cacheValue
 
 	cache.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(cache.cacheName))
-		value = b.Get([]byte(key))
+		store = b.Get([]byte(key))
 		return nil
 	})
 
-	return value, nil
+	if store == nil {
+		return nil, nil
+	}
+
+	if err := json.Unmarshal(store, &cv); err != nil {
+		return nil, err
+	}
+
+	if cache.lifetime > 0 && time.Now().Sub(cv.ts) > cache.lifetime {
+		return nil, nil
+	}
+
+	return cv.value, nil
 }
 
 func (cache *BoltCache) Put(key string, value []byte) error {
-	err := cache.db.Update(func(tx *bolt.Tx) error {
+	cv := cacheValue{
+		value: value,
+		ts:    time.Now(),
+	}
+	store, err := json.Marshal(cv)
+	if err != nil {
+		return err
+	}
+
+	err = cache.db.Update(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(cache.cacheName))
-		err := b.Put([]byte(key), []byte(value))
+		err := b.Put([]byte(key), store)
 		return err
 	})
 

@@ -4,10 +4,13 @@ import (
 	"fmt"
 	"kola/cache"
 	"strconv"
+	"time"
 )
 
 func main() {
-	c := cache.NewCache("cachetest", "test")
+	c := cache.NewCache("cachetest", "test").
+		WithCacheDirectory(".").
+		WithLifetime(10 * time.Second)
 	if err := c.Start(); err != nil {
 		panic(err)
 	}
@@ -32,4 +35,18 @@ func main() {
 	}
 
 	fmt.Printf("put new value: %s\n", val)
+
+	for {
+		val, err := c.Get("testval")
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("value: %s\n", val)
+
+		if val == nil {
+			break
+		}
+
+		time.Sleep(1 * time.Second)
+	}
 }
