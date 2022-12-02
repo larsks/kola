@@ -6,6 +6,7 @@ import (
 	"kola/cache"
 	"kola/client"
 	"kola/packagemanager"
+	"log"
 )
 
 func getCachedPackageManager(kubeconfig string) (*packagemanager.PackageManager, error) {
@@ -24,9 +25,10 @@ func getCachedPackageManager(kubeconfig string) (*packagemanager.PackageManager,
 		cache := cache.NewCache("kola", fmt.Sprintf("%x", hash.Sum(nil))).
 			WithLifetime(rootFlags.CacheLifetime)
 		if err := cache.Start(); err != nil {
-			return nil, err
+			log.Printf("failed to start cache: %v", err)
+		} else {
+			pm = pm.WithCache(cache)
 		}
-		pm = pm.WithCache(cache)
 	}
 	return pm, nil
 }
