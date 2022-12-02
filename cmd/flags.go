@@ -54,8 +54,6 @@ func AddFlagsFromSpec(command *cobra.Command, spec interface{}, persistent bool)
 		} else {
 			flagset = command.Flags()
 		}
-		fmt.Printf("short %s long %s envvar %s help %s\n",
-			shortOpt, longOpt, envvar, helpText)
 
 		switch p := specValue.Elem().Field(i).Interface().(type) {
 		case string:
