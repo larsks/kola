@@ -44,8 +44,11 @@ func AddFlagsFromSpec(command *cobra.Command, spec interface{}, persistent bool)
 		hide := field.Tag.Get("hide")
 		subtype := field.Tag.Get("subtype")
 
-		if defval == "" && envvar != "" {
-			defval = os.Getenv(envvar)
+		if envvar != "" {
+			envval := os.Getenv(envvar)
+			if envval != "" {
+				defval = os.Getenv(envvar)
+			}
 		}
 
 		var flagset *pflag.FlagSet
