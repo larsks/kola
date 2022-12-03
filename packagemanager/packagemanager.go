@@ -31,10 +31,20 @@ func (pm *PackageManager) WithCache(cache cache.Cache) *PackageManager {
 	return pm
 }
 
+// For the comparsion `pm.cache != nil`, golangci-lint running on github
+// reports:
+//
+//   Error: invalid operation: cannot compare pm.cache != nil (operator != not
+//   defined on untyped nil) (typecheck)
+//
+// We we have disabled typecheck for those lines while we investigate whether
+// this is a valid comparison and why we only see errors on github but not from
+// golangci-lint running locally.
 func (pm *PackageManager) getCached(path string) ([]byte, error) {
 	var data []byte
 	var err error
 
+	//nolint:typecheck
 	if pm.cache != nil {
 		if data, err = pm.cache.Get(path); err != nil {
 			log.Printf("cache fetch failed: %v", err)
@@ -47,6 +57,7 @@ func (pm *PackageManager) getCached(path string) ([]byte, error) {
 			return nil, err
 		}
 
+		//nolint:typecheck
 		if pm.cache != nil {
 			if err = pm.cache.Put(path, data); err != nil {
 				log.Printf("cache store failed: %v", err)
