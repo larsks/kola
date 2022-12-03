@@ -29,8 +29,8 @@ type (
 		Kubeconfig    string        `short:"k" help:"Path to kubernetes client configuration"`
 		Verbose       int           `subtype:"counter" short:"v" help:"Increase output verbosity"`
 		Debug         bool          `help:"Traceback on panic" hide:"true"`
-		CacheLifetime time.Duration `default:"10m" help:"Set cache lifetime"`
-		NoCache       bool          `help:"Disable local caching of results"`
+		CacheLifetime time.Duration `default:"10m" help:"Set cache lifetime" envvar:"KOLA_CACHE_LIFETIME"`
+		NoCache       bool          `help:"Disable local caching of results" envvar:"KOLA_NO_CACHE"`
 	}
 )
 
