@@ -116,6 +116,7 @@ func subscribePackage(pkg *operators.PackageManifest) error {
 		},
 	}
 
+	//nolint:errcheck
 	operatorsv1alpha1.AddToScheme(scheme.Scheme)
 	s := json.NewYAMLSerializer(json.DefaultMetaFactory, scheme.Scheme,
 		scheme.Scheme)

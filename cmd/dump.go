@@ -66,8 +66,11 @@ func runDump(cmd *cobra.Command, args []string) {
 }
 
 func dumpPackage(pkg *operators.PackageManifest) error {
-	operatorsv1alpha1.AddToScheme(scheme.Scheme)
-	operators.AddToScheme(scheme.Scheme)
+	//nolint:errcheck
+	{
+		operatorsv1alpha1.AddToScheme(scheme.Scheme)
+		operators.AddToScheme(scheme.Scheme)
+	}
 	s := json.NewYAMLSerializer(json.DefaultMetaFactory, scheme.Scheme,
 		scheme.Scheme)
 

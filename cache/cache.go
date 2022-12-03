@@ -97,7 +97,7 @@ func (cache *BoltCache) Start() error {
 		_, err := tx.CreateBucketIfNotExists([]byte(cache.cacheName))
 		return err
 	})
-	return nil
+	return err
 }
 
 func (cache *BoltCache) Get(key string) ([]byte, error) {
@@ -106,6 +106,7 @@ func (cache *BoltCache) Get(key string) ([]byte, error) {
 
 	// We don't check the return value here because this
 	// always returns successfully.
+	//nolint:errcheck
 	cache.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(cache.cacheName))
 		data = b.Get([]byte(key))
@@ -121,7 +122,7 @@ func (cache *BoltCache) Get(key string) ([]byte, error) {
 	}
 
 	// Return nil if cache value has expired.
-	if cache.lifetime > 0 && time.Now().Sub(cv.ts) > cache.lifetime {
+	if cache.lifetime > 0 && time.Since(cv.ts) > cache.lifetime {
 		return nil, nil
 	}
 

@@ -81,6 +81,7 @@ func AddFlagsFromSpec(command *cobra.Command, spec interface{}, persistent bool)
 		}
 
 		if stringToBool(hide) {
+			//nolint:errcheck
 			flagset.MarkHidden(longOpt)
 		}
 	}

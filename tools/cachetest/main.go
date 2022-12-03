@@ -23,7 +23,7 @@ func main() {
 
 	var ival int
 	if val != nil {
-		ival, err = strconv.Atoi(string(val))
+		ival, _ = strconv.Atoi(string(val))
 		ival++
 	} else {
 		ival = 0
