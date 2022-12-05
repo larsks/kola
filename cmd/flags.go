@@ -14,6 +14,24 @@ import (
 	"golang.org/x/exp/slices"
 )
 
+type (
+	ValidationErrorType struct {
+		Message string
+		Value   string
+	}
+)
+
+func NewValidationError(msg, value string) *ValidationErrorType {
+	return &ValidationErrorType{
+		Message: msg,
+		Value:   value,
+	}
+}
+
+func (err *ValidationErrorType) Error() string {
+	return err.Message
+}
+
 func longOptFromFieldName(s string) string {
 	parts := camelcase.Split(s)
 	return strings.ToLower(strings.Join(parts, "-"))
@@ -23,6 +41,18 @@ func AddFlagsFromSpec(command *cobra.Command, spec interface{}, persistent bool)
 	specType := reflect.TypeOf(spec)
 	specElem := specType.Elem()
 	specValue := reflect.ValueOf(spec)
+
+	validator := specValue.MethodByName("Validate")
+	if validator.IsValid() {
+		command.PreRunE = func(command *cobra.Command, args []string) error {
+			ret := validator.Call([]reflect.Value{})
+			err := ret[0].Interface()
+			if err != nil {
+				return err.(error)
+			}
+			return nil
+		}
+	}
 
 	for i := 0; i < specElem.NumField(); i++ {
 		field := specElem.Field(i)
