@@ -24,6 +24,7 @@ import (
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	operators "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1"
 	"github.com/spf13/cobra"
+	"golang.org/x/exp/slices"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/serializer/json"
 	"k8s.io/kubectl/pkg/scheme"
@@ -39,12 +40,28 @@ type (
 
 var subscribeFlags = SubscribeFlags{}
 
+var validApprovals = []string{
+	"",
+	"Automatic",
+	"Manual",
+}
+
 // subscribeCmd represents the subscribe command
 var subscribeCmd = &cobra.Command{
 	Aliases: []string{"sub"},
 	Use:     "subscribe",
 	Short:   "Generate a Subscription for a package",
 	Run:     runSubscribe,
+}
+
+func (flags *SubscribeFlags) Validate() error {
+	if !slices.Contains(validApprovals, flags.Approval) {
+		return NewValidationError(
+			"Invalid approval",
+			flags.Approval,
+		)
+	}
+	return nil
 }
 
 func init() {
