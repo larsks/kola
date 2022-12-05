@@ -21,7 +21,9 @@ import (
 	"kola/packagemanager"
 	"log"
 
+	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/spf13/cobra"
+	"golang.org/x/exp/slices"
 )
 
 type (
@@ -42,6 +44,24 @@ var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List available packages",
 	Run:   runList,
+}
+
+var validInstallModes = []string{
+	"",
+	string(operatorsv1alpha1.InstallModeTypeOwnNamespace),
+	string(operatorsv1alpha1.InstallModeTypeSingleNamespace),
+	string(operatorsv1alpha1.InstallModeTypeMultiNamespace),
+	string(operatorsv1alpha1.InstallModeTypeAllNamespaces),
+}
+
+func (flags *ListFlags) Validate() error {
+	if !slices.Contains(validInstallModes, flags.InstallMode) {
+		return NewValidationError(
+			"Invalid install mode",
+			flags.InstallMode,
+		)
+	}
+	return nil
 }
 
 func runList(cmd *cobra.Command, args []string) {
