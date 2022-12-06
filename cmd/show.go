@@ -17,6 +17,7 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 package cmd
 
 import (
+	"fmt"
 	"html/template"
 	"os"
 
@@ -35,7 +36,7 @@ var showFlags = ShowFlags{}
 var showCmd = &cobra.Command{
 	Use:   "show",
 	Short: "Show details about a package",
-	Run:   runShow,
+	RunE:  runShow,
 }
 
 func init() {
@@ -43,21 +44,29 @@ func init() {
 	AddFlagsFromSpec(showCmd, &showFlags, false)
 }
 
-func runShow(cmd *cobra.Command, args []string) {
+func runShow(cmd *cobra.Command, args []string) (err error) {
+	defer func() {
+		if err != nil {
+			err = fmt.Errorf("show: %w", err)
+		}
+	}()
+
 	pm, err := getCachedPackageManager(rootFlags.Kubeconfig)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	for _, pkgName := range args {
 		pkg, err := pm.GetPackageManifest(pkgName)
 		if err != nil {
-			panic(err)
+			return err
 		}
 		if err := showPackage(pkg); err != nil {
-			panic(err)
+			return err
 		}
 	}
+
+	return nil
 }
 
 func getKeywordsFromPackage(pkg *operators.PackageManifest) []string {

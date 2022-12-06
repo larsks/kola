@@ -34,7 +34,7 @@ var versionFlags = VersionFlags{}
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Show command version",
-	Run:   runVersion,
+	RunE:  runVersion,
 }
 
 func init() {
@@ -42,7 +42,15 @@ func init() {
 	AddFlagsFromSpec(versionCmd, &versionFlags, false)
 }
 
-func runVersion(cmd *cobra.Command, args []string) {
+func runVersion(cmd *cobra.Command, args []string) (err error) {
+	defer func() {
+		if err != nil {
+			err = fmt.Errorf("version: %w", err)
+		}
+	}()
+
 	fmt.Printf("Version %s built on %s from %s\n",
 		version.BuildVersion, version.BuildDate, version.BuildRef)
+
+	return nil
 }

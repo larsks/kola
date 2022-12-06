@@ -43,7 +43,7 @@ var listFlags = ListFlags{}
 var listCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List available packages",
-	Run:   runList,
+	RunE:  runList,
 }
 
 var validInstallModes = []string{
@@ -64,10 +64,16 @@ func (flags *ListFlags) Validate() error {
 	return nil
 }
 
-func runList(cmd *cobra.Command, args []string) {
+func runList(cmd *cobra.Command, args []string) (err error) {
+	defer func() {
+		if err != nil {
+			err = fmt.Errorf("list: %w", err)
+		}
+	}()
+
 	pm, err := getCachedPackageManager(rootFlags.Kubeconfig)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	var filters []packagemanager.PackageManifestFilter
@@ -102,7 +108,7 @@ func runList(cmd *cobra.Command, args []string) {
 
 	packages, err := pm.ListPackageManifests(filters...)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	log.Printf("found %d packages", len(packages))
@@ -116,6 +122,8 @@ func runList(cmd *cobra.Command, args []string) {
 			fmt.Printf("%s\n", pkg.Name)
 		}
 	}
+
+	return nil
 }
 
 func init() {

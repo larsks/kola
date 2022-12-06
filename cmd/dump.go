@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"errors"
+	"fmt"
 	"os"
 
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
@@ -38,7 +39,7 @@ var dumpFlags = DumpFlags{}
 var dumpCmd = &cobra.Command{
 	Use:   "dump",
 	Short: "Dump details about a package",
-	Run:   runDump,
+	RunE:  runDump,
 }
 
 func init() {
@@ -46,23 +47,31 @@ func init() {
 	AddFlagsFromSpec(dumpCmd, &dumpFlags, false)
 }
 
-func runDump(cmd *cobra.Command, args []string) {
+func runDump(cmd *cobra.Command, args []string) (err error) {
+	defer func() {
+		if err != nil {
+			err = fmt.Errorf("dump: %w", err)
+		}
+	}()
+
 	if len(args) != 1 {
-		panic(errors.New("dump requires a single package name"))
+		return errors.New("dump requires a single package name")
 	}
 
 	pm, err := getCachedPackageManager(rootFlags.Kubeconfig)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	pkg, err := pm.GetPackageManifest(args[0])
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	if err := dumpPackage(pkg); err != nil {
-		panic(err)
+		return err
 	}
+
+	return nil
 }
 
 func dumpPackage(pkg *operators.PackageManifest) error {

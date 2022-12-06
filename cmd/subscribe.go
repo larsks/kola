@@ -51,7 +51,7 @@ var subscribeCmd = &cobra.Command{
 	Aliases: []string{"sub"},
 	Use:     "subscribe",
 	Short:   "Generate a Subscription for a package",
-	Run:     runSubscribe,
+	RunE:    runSubscribe,
 }
 
 func (flags *SubscribeFlags) Validate() error {
@@ -69,24 +69,32 @@ func init() {
 	AddFlagsFromSpec(subscribeCmd, &subscribeFlags, false)
 }
 
-func runSubscribe(cmd *cobra.Command, args []string) {
+func runSubscribe(cmd *cobra.Command, args []string) (err error) {
+	defer func() {
+		if err != nil {
+			err = fmt.Errorf("subscribe: %w", err)
+		}
+	}()
+
 	if len(args) != 1 {
-		panic(errors.New("show requires a single package name"))
+		return errors.New("show requires a single package name")
 	}
 
 	pm, err := getCachedPackageManager(rootFlags.Kubeconfig)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	pkg, err := pm.GetPackageManifest(args[0])
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	if err := subscribePackage(pkg); err != nil {
-		panic(err)
+		return err
 	}
+
+	return nil
 }
 
 func subscribePackage(pkg *operators.PackageManifest) error {
