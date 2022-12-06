@@ -17,7 +17,6 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 package cmd
 
 import (
-	"errors"
 	"fmt"
 	"os"
 
@@ -52,6 +51,7 @@ var subscribeCmd = &cobra.Command{
 	Use:          "subscribe",
 	Short:        "Generate a Subscription for a package",
 	RunE:         runSubscribe,
+	Args:         cobra.ExactArgs(1),
 	SilenceUsage: true,
 }
 
@@ -76,10 +76,6 @@ func runSubscribe(cmd *cobra.Command, args []string) (err error) {
 			err = fmt.Errorf("subscribe: %w", err)
 		}
 	}()
-
-	if len(args) != 1 {
-		return errors.New("show requires a single package name")
-	}
 
 	pm, err := getCachedPackageManager(rootFlags.Kubeconfig)
 	if err != nil {

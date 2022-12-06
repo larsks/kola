@@ -35,6 +35,7 @@ var versionCmd = &cobra.Command{
 	Use:          "version",
 	Short:        "Show command version",
 	RunE:         runVersion,
+	Args:         cobra.NoArgs,
 	SilenceUsage: true,
 }
 

@@ -17,7 +17,6 @@ along with this program. If not, see <http://www.gnu.org/licenses/>.
 package cmd
 
 import (
-	"errors"
 	"fmt"
 	"os"
 
@@ -40,6 +39,7 @@ var dumpCmd = &cobra.Command{
 	Use:          "dump",
 	Short:        "Dump details about a package",
 	RunE:         runDump,
+	Args:         cobra.ExactArgs(1),
 	SilenceUsage: true,
 }
 
@@ -54,10 +54,6 @@ func runDump(cmd *cobra.Command, args []string) (err error) {
 			err = fmt.Errorf("dump: %w", err)
 		}
 	}()
-
-	if len(args) != 1 {
-		return errors.New("dump requires a single package name")
-	}
 
 	pm, err := getCachedPackageManager(rootFlags.Kubeconfig)
 	if err != nil {
