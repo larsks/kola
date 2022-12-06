@@ -9,6 +9,8 @@ import (
 	"golang.org/x/exp/slices"
 )
 
+// Return a file that matches package names against a list of
+// glob patterns. Comparisons are case insensitive.
 func MatchPackageGlobs(patterns ...string) PackageManifestFilter {
 	for i := range patterns {
 		patterns[i] = strings.ToLower(patterns[i])
@@ -25,6 +27,8 @@ func MatchPackageGlobs(patterns ...string) PackageManifestFilter {
 	}
 }
 
+// Return a filter that matches package names against a list of words.
+// Comparisons are case insensitive.
 func MatchPackageSubstrings(patterns ...string) PackageManifestFilter {
 	for i := range patterns {
 		patterns[i] = strings.ToLower(patterns[i])
@@ -41,6 +45,8 @@ func MatchPackageSubstrings(patterns ...string) PackageManifestFilter {
 	}
 }
 
+// Returns a filter that matches a specific package name. Comparisons are
+// case insensitive.
 func MatchPackageName(pattern string) PackageManifestFilter {
 	pattern = strings.ToLower(pattern)
 	return func(pkg *operators.PackageManifest) bool {
@@ -49,6 +55,8 @@ func MatchPackageName(pattern string) PackageManifestFilter {
 	}
 }
 
+// Return a filter that matches the package CatalogSource against a substring.
+// Comparisons are case insensitive.
 func MatchCatalogSource(needle string) PackageManifestFilter {
 	needle = strings.ToLower(needle)
 	return func(pkg *operators.PackageManifest) bool {
@@ -57,6 +65,8 @@ func MatchCatalogSource(needle string) PackageManifestFilter {
 	}
 }
 
+// Return a filter that matches the package description against a substring.
+// Comparisons are case insensitive.
 func MatchDescription(needle string) PackageManifestFilter {
 	needle = strings.ToLower(needle)
 	return func(pkg *operators.PackageManifest) bool {
@@ -70,6 +80,8 @@ func MatchDescription(needle string) PackageManifestFilter {
 	}
 }
 
+// Return a filter that matches the package InstallMode against a substring.
+// Comparisons are case insensitive.
 func MatchInstallMode(installmode string) PackageManifestFilter {
 	installmode = strings.ToLower(installmode)
 	return func(pkg *operators.PackageManifest) bool {
@@ -85,6 +97,8 @@ func MatchInstallMode(installmode string) PackageManifestFilter {
 	}
 }
 
+// Return a filter that matches packages if they contain any of the given
+// keywords.
 func MatchKeywords(keywords []string) PackageManifestFilter {
 	return func(pkg *operators.PackageManifest) bool {
 		for _, channel := range pkg.Status.Channels {
@@ -99,6 +113,8 @@ func MatchKeywords(keywords []string) PackageManifestFilter {
 	}
 }
 
+// Return a filter that matches packages based on the value of the
+// certified attribute.
 func MatchCertified(certified bool) PackageManifestFilter {
 	certifiedString := strconv.FormatBool(certified)
 	return func(pkg *operators.PackageManifest) bool {

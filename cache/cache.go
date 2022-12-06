@@ -1,3 +1,6 @@
+// A simple Put/Get wrapper around bbolt [1].
+//
+// [1]: https://github.com/etcd-io/bbolt
 package cache
 
 import (

@@ -9,6 +9,8 @@ import (
 	"log"
 )
 
+// Return a new PackageManager with an associated Cache (unless --no-cache
+// was specified at runtime).
 func getCachedPackageManager(kubeconfig string) (*packagemanager.PackageManager, error) {
 	config, clientset, err := client.GetClient(kubeconfig)
 	if err != nil {
@@ -18,6 +20,10 @@ func getCachedPackageManager(kubeconfig string) (*packagemanager.PackageManager,
 	pm := packagemanager.NewPackageManager(clientset)
 
 	if !rootFlags.NoCache {
+
+		// Generate a hash of (Host, APIPath) to use as a cache
+		// identifier. This ensures we don't accidentally use
+		// cached information for the wrong remote host.
 		hash := sha256.New()
 		hash.Write([]byte(config.Host))
 		hash.Write([]byte(config.APIPath))
