@@ -32,9 +32,10 @@ var versionFlags = VersionFlags{}
 
 // versionCmd represents the version command
 var versionCmd = &cobra.Command{
-	Use:   "version",
-	Short: "Show command version",
-	RunE:  runVersion,
+	Use:          "version",
+	Short:        "Show command version",
+	RunE:         runVersion,
+	SilenceUsage: true,
 }
 
 func init() {

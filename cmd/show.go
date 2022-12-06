@@ -34,9 +34,10 @@ var showFlags = ShowFlags{}
 
 // showCmd represents the show command
 var showCmd = &cobra.Command{
-	Use:   "show",
-	Short: "Show details about a package",
-	RunE:  runShow,
+	Use:          "show",
+	Short:        "Show details about a package",
+	RunE:         runShow,
+	SilenceUsage: true,
 }
 
 func init() {

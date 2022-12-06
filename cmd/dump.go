@@ -37,9 +37,10 @@ var dumpFlags = DumpFlags{}
 
 // dumpCmd represents the dump command
 var dumpCmd = &cobra.Command{
-	Use:   "dump",
-	Short: "Dump details about a package",
-	RunE:  runDump,
+	Use:          "dump",
+	Short:        "Dump details about a package",
+	RunE:         runDump,
+	SilenceUsage: true,
 }
 
 func init() {

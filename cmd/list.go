@@ -41,9 +41,10 @@ var listFlags = ListFlags{}
 
 // listCmd represents the list command
 var listCmd = &cobra.Command{
-	Use:   "list",
-	Short: "List available packages",
-	RunE:  runList,
+	Use:          "list",
+	Short:        "List available packages",
+	RunE:         runList,
+	SilenceUsage: true,
 }
 
 var validInstallModes = []string{

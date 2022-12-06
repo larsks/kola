@@ -48,10 +48,11 @@ var validApprovals = []string{
 
 // subscribeCmd represents the subscribe command
 var subscribeCmd = &cobra.Command{
-	Aliases: []string{"sub"},
-	Use:     "subscribe",
-	Short:   "Generate a Subscription for a package",
-	RunE:    runSubscribe,
+	Aliases:      []string{"sub"},
+	Use:          "subscribe",
+	Short:        "Generate a Subscription for a package",
+	RunE:         runSubscribe,
+	SilenceUsage: true,
 }
 
 func (flags *SubscribeFlags) Validate() error {
