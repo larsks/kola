@@ -41,6 +41,7 @@ var dumpCmd = &cobra.Command{
 	RunE:         runDump,
 	Args:         cobra.ExactArgs(1),
 	SilenceUsage: true,
+	Hidden:       true,
 }
 
 func init() {
