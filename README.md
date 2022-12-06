@@ -10,7 +10,6 @@ Usage:
 
 Available Commands:
   completion  Generate the autocompletion script for the specified shell
-  dump        Dump details about a package
   help        Help about any command
   list        List available packages
   show        Show details about a package
@@ -18,9 +17,11 @@ Available Commands:
   version     Show command version
 
 Flags:
-  -h, --help                help for kola
-  -k, --kubeconfig string   Path to kubernetes client configuration
-  -v, --verbose count       Increase log verbosity
+      --cache-lifetime duration   Set cache lifetime (default 10m0s)
+  -h, --help                      help for kola
+  -k, --kubeconfig string         Path to kubernetes client configuration
+      --no-cache                  Disable local caching of results
+  -v, --verbose count             Increase output verbosity
 
 Use "kola [command] --help" for more information about a command.
 ```
@@ -34,17 +35,19 @@ Usage:
   kola list [flags]
 
 Flags:
-  -c, --catalogSource string   Match string in package catalog source
-  -C, --certified              Match only certified packages
-  -d, --description string     Match string in package description
-  -g, --glob                   Arguments are glob patterns instead of substrings
-  -h, --help                   help for list
-  -m, --installMode string     Match package supported install mode
-  -w, --keyword strings        Match package keyword
+  -c, --catalog-source string   Match string in package catalog source
+  -C, --certified               Match only certified packages
+  -d, --description string      Match string in package description
+  -g, --glob                    Arguments are glob patterns instead of substrings
+  -h, --help                    help for list
+  -m, --install-mode string     Match package supported install mode
+  -w, --keyword strings         Match package keyword
 
 Global Flags:
-  -k, --kubeconfig string   Path to kubernetes client configuration
-  -v, --verbose count       Increase log verbosity
+      --cache-lifetime duration   Set cache lifetime (default 10m0s)
+  -k, --kubeconfig string         Path to kubernetes client configuration
+      --no-cache                  Disable local caching of results
+  -v, --verbose count             Increase output verbosity
 ```
 
 ### Show command
@@ -56,12 +59,13 @@ Usage:
   kola show [flags]
 
 Flags:
-  -d, --description   Include description in output
-  -h, --help          help for show
+  -h, --help   help for show
 
 Global Flags:
-  -k, --kubeconfig string   Path to kubernetes client configuration
-  -v, --verbose count       Increase log verbosity
+      --cache-lifetime duration   Set cache lifetime (default 10m0s)
+  -k, --kubeconfig string         Path to kubernetes client configuration
+      --no-cache                  Disable local caching of results
+  -v, --verbose count             Increase output verbosity
 ```
 
 ### Subscribe command
@@ -82,8 +86,10 @@ Flags:
   -n, --namespace string   Set namespace for subscription
 
 Global Flags:
-  -k, --kubeconfig string   Path to kubernetes client configuration
-  -v, --verbose count       Increase log verbosity
+      --cache-lifetime duration   Set cache lifetime (default 10m0s)
+  -k, --kubeconfig string         Path to kubernetes client configuration
+      --no-cache                  Disable local caching of results
+  -v, --verbose count             Increase output verbosity
 ```
 
 ## Examples
