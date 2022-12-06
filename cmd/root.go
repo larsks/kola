@@ -18,7 +18,6 @@ package cmd
 
 import (
 	"log"
-	"os"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -35,8 +34,9 @@ type (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "kola",
-	Short: "Interact with OLM package manifests",
+	Use:           "kola",
+	Short:         "Interact with OLM package manifests",
+	SilenceErrors: true,
 }
 
 var rootFlags = RootFlags{}
@@ -52,7 +52,7 @@ func Execute() {
 	}()
 	err := rootCmd.Execute()
 	if err != nil {
-		os.Exit(1)
+		log.Fatalf("ERROR: %v", err)
 	}
 }
 
