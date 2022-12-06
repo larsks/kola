@@ -19,8 +19,11 @@ LDFLAGS = -ldflags '$(BUILDDATA)'
 
 all: $(TARGET)
 
-$(TARGET): $(SRC)
+$(TARGET): $(SRC) go.sum
 	go build $(LDFLAGS) -o $(TARGET)
+
+go.sum: go.mod
+	go mod tidy
 
 install: $(TARGET)
 	$(INSTALL) -m 755 $(TARGET) $(DESTDIR)$(bindir)/$(TARGET)
