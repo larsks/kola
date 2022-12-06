@@ -19,14 +19,19 @@ LDFLAGS = -ldflags '$(BUILDDATA)'
 
 all: $(TARGET)
 
-$(TARGET): $(SRC) go.sum
+$(TARGET): .checked $(SRC) go.sum
 	go build $(LDFLAGS) -o $(TARGET)
 
+check: .checked
+
+.checked: $(SRC) go.sum
+	golangci-lint run | tee $@
+
 go.sum: go.mod
-	go mod tidy
+	go mod tidy && touch $@
 
 install: $(TARGET)
 	$(INSTALL) -m 755 $(TARGET) $(DESTDIR)$(bindir)/$(TARGET)
 
 clean:
-	rm -f $(TARGET)
+	rm -f $(TARGET) .checked
