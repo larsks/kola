@@ -122,8 +122,8 @@ func subscribePackage(pkg *operators.PackageManifest) error {
 
 	subscription := operatorsv1alpha1.Subscription{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: operatorsv1alpha1.SubscriptionKind,
-			Kind:       operatorsv1alpha1.SubscriptionCRDAPIVersion,
+			APIVersion: operatorsv1alpha1.SubscriptionCRDAPIVersion,
+			Kind:       operatorsv1alpha1.SubscriptionKind,
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
