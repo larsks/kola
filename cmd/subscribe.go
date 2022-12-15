@@ -19,11 +19,14 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
 
+	operatorsv1 "github.com/operator-framework/api/pkg/operators/v1"
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	operators "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1"
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/slices"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/serializer/json"
 	"k8s.io/kubectl/pkg/scheme"
@@ -31,9 +34,13 @@ import (
 
 type (
 	SubscribeFlags struct {
-		Channel   string `short:"c" help:"Set channel for subscription"`
-		Approval  string `short:"a" help:"Set install plan approval for subscription" default:"Automatic"`
-		Namespace string `short:"n" help:"Set namespace for subscription"`
+		Channel             string   `short:"c" help:"Set channel for subscription"`
+		Approval            string   `short:"a" help:"Set install plan approval for subscription" default:"Automatic"`
+		Namespace           string   `short:"n" help:"Set namespace for subscription"`
+		CreateNamespace     bool     `short:"N" help:"Create a namespace"`
+		CreateOperatorGroup bool     `short:"G" help:"Create an OperatorGroup"`
+		TargetNamespace     []string `short:"t" help:"Set a target namespace"`
+		Selector            []string `short:"l" help:"Set a namespace selector"`
 	}
 )
 
@@ -113,10 +120,10 @@ func subscribePackage(pkg *operators.PackageManifest) error {
 			channelName, pkg.Name)
 	}
 
-	namespace := subscribeFlags.Namespace
-	if namespace == "" {
+	namespaceName := subscribeFlags.Namespace
+	if namespaceName == "" {
 		if suggested, ok := channel.CurrentCSVDesc.Annotations["operatorframework.io/suggested-namespace"]; ok {
-			namespace = suggested
+			namespaceName = suggested
 		}
 	}
 
@@ -126,7 +133,7 @@ func subscribePackage(pkg *operators.PackageManifest) error {
 			Kind:       operatorsv1alpha1.SubscriptionKind,
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace: namespace,
+			Namespace: namespaceName,
 			Name:      pkg.Name,
 		},
 		Spec: &operatorsv1alpha1.SubscriptionSpec{
@@ -140,9 +147,68 @@ func subscribePackage(pkg *operators.PackageManifest) error {
 
 	//nolint:errcheck
 	operatorsv1alpha1.AddToScheme(scheme.Scheme)
-	s := json.NewYAMLSerializer(json.DefaultMetaFactory, scheme.Scheme,
-		scheme.Scheme)
+	//nolint:errcheck
+	corev1.AddToScheme(scheme.Scheme)
 
-	err := s.Encode(&subscription, os.Stdout)
-	return err
+	serializer := json.NewSerializerWithOptions(
+		json.DefaultMetaFactory, scheme.Scheme, scheme.Scheme,
+		json.SerializerOptions{
+			Pretty: true,
+			Yaml:   true,
+			Strict: true,
+		})
+
+	if err := serializer.Encode(&subscription, os.Stdout); err != nil {
+		return err
+	}
+
+	if subscribeFlags.CreateNamespace {
+		namespace := corev1.Namespace{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "Namespace",
+				APIVersion: "v1",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name: namespaceName,
+			},
+		}
+		os.Stdout.Write([]byte("---\n"))
+		if err := serializer.Encode(&namespace, os.Stdout); err != nil {
+			return err
+		}
+	}
+
+	if subscribeFlags.CreateOperatorGroup {
+		operatorgroup := operatorsv1.OperatorGroup{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "OperatorGroup",
+				APIVersion: "operators.coreos.com/v1",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: namespaceName,
+				Name:      pkg.Name,
+			},
+		}
+
+		if len(subscribeFlags.TargetNamespace) > 0 {
+			operatorgroup.Spec.TargetNamespaces = subscribeFlags.TargetNamespace
+		} else if len(subscribeFlags.Selector) > 0 {
+			operatorgroup.Spec.Selector = &metav1.LabelSelector{}
+			operatorgroup.Spec.Selector.MatchLabels = make(map[string]string)
+			for _, selector := range subscribeFlags.Selector {
+				kv := strings.Split(selector, "=")
+				if len(kv) == 2 {
+					operatorgroup.Spec.Selector.MatchLabels[kv[0]] = kv[1]
+				}
+			}
+		}
+
+		os.Stdout.Write([]byte("---\n"))
+		if err := serializer.Encode(&operatorgroup,
+			os.Stdout); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
