@@ -24,7 +24,6 @@ import (
 
 	operatorsv1 "github.com/operator-framework/api/pkg/operators/v1"
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
-	operators "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1"
 	"github.com/spf13/cobra"
 	"golang.org/x/exp/slices"
 	corev1 "k8s.io/api/core/v1"
@@ -105,20 +104,12 @@ func runSubscribe(cmd *cobra.Command, args []string) (err error) {
 func subscribePackage(pkg *packagemanager.Package) error {
 	channelName := subscribeFlags.Channel
 	if channelName == "" {
-		channelName = pkg.Status.DefaultChannel
+		channelName = pkg.GetDefaultChannelName()
 	}
 
-	var channel *operators.PackageChannel
-	for _, check := range pkg.Status.Channels {
-		if check.Name == channelName {
-			channel = &check
-			break
-		}
-	}
-
-	if channel == nil {
-		return fmt.Errorf("no such channel named %s for package %s",
-			channelName, pkg.Name)
+	channel, err := pkg.GetChannelByName(channelName)
+	if err != nil {
+		return fmt.Errorf("unable to subscribe to package: %w", err)
 	}
 
 	namespaceName := subscribeFlags.Namespace
