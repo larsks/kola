@@ -66,3 +66,13 @@ func (pkg *Package) GetDefaultDescription() string {
 	channel := pkg.GetDefaultChannel()
 	return channel.CurrentCSVDesc.LongDescription
 }
+
+func (pkg *Package) SupportsInstallMode(mode string) bool {
+	channel := pkg.GetDefaultChannel()
+	for _, installMode := range channel.CurrentCSVDesc.InstallModes {
+		if string(installMode.Type) == mode {
+			return installMode.Supported
+		}
+	}
+	return false
+}
