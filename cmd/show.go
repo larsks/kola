@@ -70,47 +70,36 @@ func runShow(cmd *cobra.Command, args []string) (err error) {
 	return nil
 }
 
-func getKeywordsFromPackage(pkg *operators.PackageManifest) []string {
-	var keywords []string
-	kwmap := make(map[string]bool)
-
-	for _, channel := range pkg.Status.Channels {
-		for _, keyword := range channel.CurrentCSVDesc.Keywords {
-			kwmap[keyword] = true
-		}
-	}
-
-	for k := range kwmap {
-		keywords = append(keywords, k)
-	}
-
-	return keywords
-}
-
 func showPackage(pkg *operators.PackageManifest) error {
-	keywords := getKeywordsFromPackage(pkg)
-
 	data := struct {
-		Package  *operators.PackageManifest
-		Flags    *ShowFlags
-		Keywords []string
-		Verbose  int
-	}{pkg, &showFlags, keywords, rootFlags.Verbose}
+		Package *operators.PackageManifest
+		Flags   *ShowFlags
+		Verbose int
+	}{pkg, &showFlags, rootFlags.Verbose}
 
 	tmpl, err := template.New("package").Parse(`
 Name: {{ .Package.Name }}
 Catalog source: {{ .Package.Status.CatalogSourceDisplayName }} ({{ .Package.Status.CatalogSource }})
 Publisher: {{ .Package.Status.CatalogSourcePublisher }}
 Provider: {{ .Package.Status.Provider.Name }}{{ if .Package.Status.Provider.URL }} ({{ .Package.Status.Provider.URL }}){{ end }}
-Keywords: {{ range $index, $element := .Keywords }}{{ if $index }}, {{ end }}{{ $element }}{{end}}
+Keywords:
+{{ range $index, $element := (index .Package.Status.Channels 0).CurrentCSVDesc.Keywords -}}
+- {{ $element }}
+{{ end -}}
 Channels:
 {{ range .Package.Status.Channels -}}
-  - {{ .Name }} ({{ .CurrentCSV }})
-{{ end }}
-{{ if (gt .Verbose 0) }}
+- {{ .Name }} ({{ .CurrentCSV }})
+{{ end -}}
+Supported install modes:
+{{ range $index, $element := (index .Package.Status.Channels 0).CurrentCSVDesc.InstallModes }}
+{{- if $element.Supported -}}
+- {{ $element.Type }}
+{{ end -}}
+{{ end -}}
+{{- if (gt .Verbose 0) -}}
 Description:
 {{ (index .Package.Status.Channels 0).CurrentCSVDesc.LongDescription }}
-{{ end -}}
+{{ end }}
 `)
 	if err != nil {
 		return err
