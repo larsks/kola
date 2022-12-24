@@ -23,6 +23,8 @@ import (
 
 	operators "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1"
 	"github.com/spf13/cobra"
+
+	_ "embed"
 )
 
 type (
@@ -30,15 +32,20 @@ type (
 	}
 )
 
-var showFlags = ShowFlags{}
+var (
+	showFlags = ShowFlags{}
 
-// showCmd represents the show command
-var showCmd = &cobra.Command{
-	Use:          "show",
-	Short:        "Show details about a package",
-	RunE:         runShow,
-	SilenceUsage: true,
-}
+	// showCmd represents the show command
+	showCmd = &cobra.Command{
+		Use:          "show",
+		Short:        "Show details about a package",
+		RunE:         runShow,
+		SilenceUsage: true,
+	}
+
+	//go:embed templates/show.tpl
+	showTemplate string
+)
 
 func init() {
 	rootCmd.AddCommand(showCmd)
@@ -77,30 +84,7 @@ func showPackage(pkg *operators.PackageManifest) error {
 		Verbose int
 	}{pkg, &showFlags, rootFlags.Verbose}
 
-	tmpl, err := template.New("package").Parse(`
-Name: {{ .Package.Name }}
-Catalog source: {{ .Package.Status.CatalogSourceDisplayName }} ({{ .Package.Status.CatalogSource }})
-Publisher: {{ .Package.Status.CatalogSourcePublisher }}
-Provider: {{ .Package.Status.Provider.Name }}{{ if .Package.Status.Provider.URL }} ({{ .Package.Status.Provider.URL }}){{ end }}
-Keywords:
-{{ range $index, $element := (index .Package.Status.Channels 0).CurrentCSVDesc.Keywords -}}
-- {{ $element }}
-{{ end -}}
-Channels:
-{{ range .Package.Status.Channels -}}
-- {{ .Name }} ({{ .CurrentCSV }})
-{{ end -}}
-Supported install modes:
-{{ range $index, $element := (index .Package.Status.Channels 0).CurrentCSVDesc.InstallModes }}
-{{- if $element.Supported -}}
-- {{ $element.Type }}
-{{ end -}}
-{{ end -}}
-{{- if (gt .Verbose 0) -}}
-Description:
-{{ (index .Package.Status.Channels 0).CurrentCSVDesc.LongDescription }}
-{{ end }}
-`)
+	tmpl, err := template.New("package").Parse(showTemplate)
 	if err != nil {
 		return err
 	}
