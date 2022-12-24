@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"fmt"
+	"kola/packagemanager"
 	"os"
 
 	operatorsv1alpha1 "github.com/operator-framework/api/pkg/operators/v1alpha1"
@@ -72,7 +73,7 @@ func runDump(cmd *cobra.Command, args []string) (err error) {
 	return nil
 }
 
-func dumpPackage(pkg *operators.PackageManifest) error {
+func dumpPackage(pkg *packagemanager.Package) error {
 	//nolint:errcheck
 	{
 		operatorsv1alpha1.AddToScheme(scheme.Scheme)

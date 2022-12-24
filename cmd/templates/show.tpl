@@ -3,20 +3,18 @@ Catalog source: {{ .Package.Status.CatalogSourceDisplayName }} ({{ .Package.Stat
 Publisher: {{ .Package.Status.CatalogSourcePublisher }}
 Provider: {{ .Package.Status.Provider.Name }}{{ if .Package.Status.Provider.URL }} ({{ .Package.Status.Provider.URL }}){{ end }}
 Keywords:
-{{ range $index, $element := (index .Package.Status.Channels 0).CurrentCSVDesc.Keywords -}}
+{{ range $element := .Package.GetDefaultKeywords -}}
 - {{ $element }}
 {{ end -}}
 Channels:
-{{ range .Package.Status.Channels -}}
+{{ range .Package.GetChannels -}}
 - {{ .Name }} ({{ .CurrentCSV }})
 {{ end -}}
 Supported install modes:
-{{ range $index, $element := (index .Package.Status.Channels 0).CurrentCSVDesc.InstallModes }}
-{{- if $element.Supported -}}
-- {{ $element.Type }}
-{{ end -}}
-{{ end -}}
-{{- if (gt .Verbose 0) -}}
+{{ range $element := .Package.GetDefaultInstallModes -}}
+- {{ $element }}
+{{ end }}
+{{- if (gt .Verbose 0) }}
 Description:
-{{ (index .Package.Status.Channels 0).CurrentCSVDesc.LongDescription }}
+{{ .Package.GetDefaultDescription }}
 {{ end }}

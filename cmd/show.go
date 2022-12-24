@@ -19,9 +19,9 @@ package cmd
 import (
 	"fmt"
 	"html/template"
+	"kola/packagemanager"
 	"os"
 
-	operators "github.com/operator-framework/operator-lifecycle-manager/pkg/package-server/apis/operators/v1"
 	"github.com/spf13/cobra"
 
 	_ "embed"
@@ -77,9 +77,9 @@ func runShow(cmd *cobra.Command, args []string) (err error) {
 	return nil
 }
 
-func showPackage(pkg *operators.PackageManifest) error {
+func showPackage(pkg *packagemanager.Package) error {
 	data := struct {
-		Package *operators.PackageManifest
+		Package *packagemanager.Package
 		Flags   *ShowFlags
 		Verbose int
 	}{pkg, &showFlags, rootFlags.Verbose}

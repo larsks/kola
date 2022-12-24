@@ -66,8 +66,8 @@ func (pm *PackageManager) getCached(path string) ([]byte, error) {
 }
 
 // Get the PackageManifest for a particular package.
-func (pm *PackageManager) GetPackageManifest(packageName string) (*operators.PackageManifest, error) {
-	var pkg operators.PackageManifest
+func (pm *PackageManager) GetPackageManifest(packageName string) (*Package, error) {
+	var pkg Package
 
 	data, err := pm.getCached(
 		fmt.Sprintf("/apis/packages.operators.coreos.com/v1/namespaces/default/packagemanifests/%s", packageName))

@@ -1,5 +1,6 @@
 TARGET = kola
 SRC = $(shell find . -type f -name '*.go' -not -path "./vendor/*")
+TEMPLATES = $(shell find . -type f -name '*.tpl' -not -path "./vendor/*")
 
 VERSION = $(shell git describe --tags --exact-match 2> /dev/null || echo development)
 COMMIT = $(shell git rev-parse --short=10 HEAD)
@@ -19,8 +20,11 @@ LDFLAGS = -ldflags '$(BUILDDATA)'
 
 all: $(TARGET)
 
-$(TARGET): .checked $(SRC) go.sum
+$(TARGET): .checked $(SRC) $(TEMPLATES) go.sum
 	go build $(LDFLAGS) -o $(TARGET)
+
+foo:
+	echo $(TEMPLATES)
 
 check: .checked
 

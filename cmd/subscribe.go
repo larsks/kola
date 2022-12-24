@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"fmt"
+	"kola/packagemanager"
 	"os"
 	"strings"
 
@@ -101,7 +102,7 @@ func runSubscribe(cmd *cobra.Command, args []string) (err error) {
 	return nil
 }
 
-func subscribePackage(pkg *operators.PackageManifest) error {
+func subscribePackage(pkg *packagemanager.Package) error {
 	channelName := subscribeFlags.Channel
 	if channelName == "" {
 		channelName = pkg.Status.DefaultChannel
