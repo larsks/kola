@@ -119,6 +119,18 @@ func subscribePackage(pkg *packagemanager.Package) error {
 		}
 	}
 
+	if subscribeFlags.CreateOperatorGroup {
+		if len(subscribeFlags.TargetNamespace) == 0 && !pkg.SupportsInstallMode("AllNamespaces") {
+			return fmt.Errorf("%s does not support AllNamespaces install mode", pkg.Name)
+		} else if len(subscribeFlags.TargetNamespace) == 1 && subscribeFlags.TargetNamespace[0] == namespaceName && !pkg.SupportsInstallMode("OwnNamespace") {
+			return fmt.Errorf("%s does not support OwnNamespace install mode", pkg.Name)
+		} else if len(subscribeFlags.TargetNamespace) == 1 && subscribeFlags.TargetNamespace[0] != namespaceName && !pkg.SupportsInstallMode("SingleNamespace") {
+			return fmt.Errorf("%s does not support SingleNamespace install mode", pkg.Name)
+		} else if len(subscribeFlags.TargetNamespace) > 1 && !pkg.SupportsInstallMode("MultiNamespace") {
+			return fmt.Errorf("%s does not support MultiNamespace install mode", pkg.Name)
+		}
+	}
+
 	subscription := operatorsv1alpha1.Subscription{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: operatorsv1alpha1.SubscriptionCRDAPIVersion,
