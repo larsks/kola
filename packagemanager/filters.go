@@ -100,10 +100,21 @@ func MatchInstallMode(installmode string) PackageManifestFilter {
 // Return a filter that matches packages if they contain any of the given
 // keywords.
 func MatchKeywords(keywords []string) PackageManifestFilter {
+	for i := range keywords {
+		keywords[i] = strings.ToLower(keywords[i])
+	}
+
 	return func(pkg *operators.PackageManifest) bool {
 		for _, channel := range pkg.Status.Channels {
+			// generate lowercase version of keywords
+			// for case-insensitive comparison
+			var hasKeywords []string
+			for _, keyword := range channel.CurrentCSVDesc.Keywords {
+				hasKeywords = append(hasKeywords, strings.ToLower(keyword))
+			}
+
 			for _, keyword := range keywords {
-				if slices.Contains(channel.CurrentCSVDesc.Keywords, keyword) {
+				if slices.Contains(hasKeywords, keyword) {
 					return true
 				}
 			}
